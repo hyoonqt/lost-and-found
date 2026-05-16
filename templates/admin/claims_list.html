@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daftar Klaim — Lost &amp; Found Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Menggunakan base styling yang sama persis dengan dashboard */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #0066FF; --primary-hover: #0052cc;
+      --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #fae8ff 100%);
+      --surface: #ffffff; --text-dark: #1e293b; --text-muted: #64748b;
+      --border-light: #f1f5f9; --sidebar-width: 240px;
+    }
+    body {
+      font-family: 'Inter', sans-serif; background: var(--bg-gradient);
+      color: var(--text-dark); min-height: 100vh; padding: 1rem; display: flex;
+    }
+    .app-container {
+      display: flex; width: 100%; background: var(--surface);
+      border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); overflow: hidden;
+    }
+    .sidebar { width: var(--sidebar-width); border-right: 1px solid var(--border-light); display: flex; flex-direction: column; padding: 1.5rem 1rem; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0.5rem; margin-bottom: 2rem; }
+    .sidebar-logo-icon { background: var(--primary); color: #fff; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; }
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 0.75rem 1rem; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; text-decoration: none; border-radius: 12px; transition: all 0.2s; }
+    .nav-item:hover { background: var(--border-light); color: var(--text-dark); }
+    .nav-item.active { background: var(--primary); color: white; }
+    
+    .main-content { flex: 1; display: flex; flex-direction: column; background: #fafafc; }
+    .topbar { padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; background: var(--surface); border-bottom: 1px solid var(--border-light); }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; margin-left: auto; }
+    .user-profile { display: flex; align-items: center; gap: 10px; background: var(--border-light); padding: 0.4rem 0.8rem; border-radius: 20px; }
+    .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; }
+    
+    .content-body { padding: 2rem; flex: 1; overflow-y: auto; }
+    .page-header { margin-bottom: 2rem; }
+    .page-title { font-size: 1.5rem; font-weight: 700; }
+
+    .btn { padding: 0.5rem 1rem; border-radius: 8px; font-weight: 500; font-size: 0.8rem; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-approve { background: #16a34a; color: white; }
+    .btn-approve:hover { background: #15803d; }
+    .btn-reject { background: #fff1f2; color: #e11d48; border: 1px solid #ffe4e6; }
+    .btn-reject:hover { background: #ffe4e6; }
+
+    /* CSS grid spesifik untuk form klaim */
+    .claims-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+    .claim-card { background: var(--surface); border: 1px solid var(--border-light); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+    
+    .claim-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-light); padding-bottom: 1rem; }
+    .claim-item-name { font-weight: 600; color: var(--text-dark); margin-bottom: 4px; }
+    .claim-item-code { font-family: monospace; font-size: 0.8rem; background: var(--border-light); padding: 2px 6px; border-radius: 4px; color: var(--text-muted); }
+    
+    .claim-status { font-size: 0.75rem; font-weight: 600; padding: 4px 8px; border-radius: 12px; }
+    .status-PENDING { background: #fef9c3; color: #a16207; }
+    .status-APPROVED { background: #dcfce7; color: #16a34a; }
+    .status-REJECTED { background: #fee2e2; color: #b91c1c; }
+
+    .claim-details { font-size: 0.85rem; color: var(--text-dark); line-height: 1.5; }
+    .detail-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 2px; margin-top: 10px; }
+    .proof-box { background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid var(--border-light); margin-top: 5px; font-style: italic; color: var(--text-muted); }
+
+    .claim-actions { display: flex; gap: 10px; margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-light); }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">L</div>
+      <div class="sidebar-logo-text">Lost & Found</div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/admin/dashboard" class="nav-item">Dashboard</a>
+      <a href="/admin/items/new" class="nav-item">Tambah Barang</a>
+      <a href="/admin/claims" class="nav-item active">Daftar Klaim</a>
+      <a href="/" class="nav-item" style="margin-top: auto;">Lihat Publik</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-right">
+        <div class="user-profile">
+          <div class="user-avatar">{{ admin.username[0].upper() }}</div>
+          <span style="font-size: 0.85rem; font-weight: 500;">{{ admin.username }}</span>
+        </div>
+        <a href="/admin/logout" style="text-decoration: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 500;">Log out</a>
+      </div>
+    </div>
+
+    <div class="content-body">
+      <div class="page-header">
+        <h1 class="page-title">Permintaan Klaim Barang</h1>
+      </div>
+
+      <div class="claims-grid">
+        {% if claims %}
+          {% for claim in claims %}
+          <div class="claim-card">
+            <div class="claim-header">
+              <div>
+                <div class="claim-item-name">{{ claim.item.title if claim.item else 'Item Dihapus' }}</div>
+                <div class="claim-item-code">{{ claim.item.code if claim.item else 'N/A' }}</div>
+              </div>
+              <div class="claim-status status-{{ claim.status }}">{{ claim.status }}</div>
+            </div>
+
+            <div class="claim-details">
+              <div class="detail-label">Diklaim Oleh</div>
+              <div><strong>{{ claim.claimer_name }}</strong> ({{ claim.claimer_class }})</div>
+
+              <div class="detail-label">Kontak</div>
+              <div style="margin-bottom: 5px;">{{ claim.contact_number }}</div>
+              <a href="https://wa.me/{{ claim.contact_number|replace('08', '628') }}" target="_blank" style="display: inline-block; background: #0066FF; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; text-decoration: none; font-weight: 600;">Hubungi via WA</a>
+
+              <div class="detail-label">Tanggal Pengajuan</div>
+              <div>{{ claim.created_at.strftime('%d %b %Y, %H:%M') }}</div>
+
+              <div class="detail-label">Bukti Ciri Khusus</div>
+              <div class="proof-box">"{{ claim.proof_description }}"</div>
+
+              {% if claim.proof_image_url %}
+              <div class="detail-label">Foto Bukti</div>
+              <a href="{{ claim.proof_image_url }}" target="_blank">
+                <img src="{{ claim.proof_image_url }}" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border-light); margin-top: 5px;">
+              </a>
+              {% endif %}
+            </div>
+
+            {% if claim.status == 'PENDING' %}
+            <div class="claim-actions">
+              <form action="/admin/claims/{{ claim.id }}/process" method="POST" style="flex:1;">
+                <input type="hidden" name="action" value="approve">
+                <button type="submit" class="btn btn-approve" style="width:100%;">Approve</button>
+              </form>
+              <form action="/admin/claims/{{ claim.id }}/process" method="POST" style="flex:1;">
+                <input type="hidden" name="action" value="reject">
+                <button type="submit" class="btn btn-reject" style="width:100%;">Reject</button>
+              </form>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-muted);">
+            Belum ada permintaan klaim yang masuk.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

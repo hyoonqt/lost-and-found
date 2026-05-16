@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Barang Hilang & Temuan{% endblock %}
+
+{% block head %}
+<style>
+  .hero {
+    padding: 4rem 0; text-align: center;
+  }
+  .hero h1 { font-size: 3rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-dark); }
+  .hero p { font-size: 1.1rem; color: var(--text-muted); max-width: 600px; margin: 0 auto 2rem; }
+
+  /* ── Filter & Search Toolbar ── */
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;
+  }
+  .filter-pills { display: flex; gap: 10px; }
+  .filter-pill {
+    padding: 0.5rem 1.2rem; border-radius: 20px; font-size: 0.9rem; font-weight: 500;
+    text-decoration: none; color: var(--text-muted); background: var(--surface);
+    border: 1px solid var(--border-light); transition: all 0.2s;
+  }
+  .filter-pill:hover { border-color: var(--primary); color: var(--primary); }
+  .filter-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  .search-wrap {
+    background: var(--surface); border: 1px solid var(--border-light);
+    border-radius: 20px; padding: 0.4rem 1rem; display: flex; align-items: center; gap: 10px;
+    width: 300px;
+  }
+  .search-wrap input {
+    border: none; background: transparent; outline: none;
+    width: 100%; font-family: inherit;
+  }
+
+  /* ── Grid ── */
+  .items-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem;
+  }
+  .item-card {
+    background: var(--surface); border: 1px solid var(--border-light);
+    border-radius: 16px; overflow: hidden; text-decoration: none; color: inherit;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .item-card:hover { box-shadow: 0 10px 30px rgba(0,0,0,0.05); transform: translateY(-3px); }
+  
+  .card-img {
+    height: 180px; background: #f8fafc; display: flex; align-items: center; justify-content: center;
+    font-size: 3rem; color: #cbd5e1;
+  }
+  .card-img img { width: 100%; height: 100%; object-fit: cover; }
+  
+  .card-body { padding: 1.2rem; }
+  .card-title { font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem; }
+  .card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted); }
+  
+  .status-badge {
+    padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;
+  }
+  .status-LOST { background: #fff1f2; color: #e11d48; }
+  .status-FOUND { background: #f0fdf4; color: #16a34a; }
+  .status-CLAIMED { background: #f1f5f9; color: #64748b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main">
+  <div class="hero">
+    <h1>Inventory Tracking</h1>
+    <p>Sistem pencatatan barang hilang dan temuan. Temukan barang Anda atau bantu kembalikan milik orang lain.</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-pills">
+      <a href="/" class="filter-pill {% if active_status == 'ALL' %}active{% endif %}">Semua</a>
+      <a href="/?status=FOUND" class="filter-pill {% if active_status == 'FOUND' %}active{% endif %}">Ditemukan</a>
+      <a href="/?status=LOST" class="filter-pill {% if active_status == 'LOST' %}active{% endif %}">Hilang</a>
+    </div>
+
+    <form method="GET" action="/" class="search-wrap">
+      {% if active_status != 'ALL' %}<input type="hidden" name="status" value="{{ active_status }}" />{% endif %}
+      <span>🔍</span>
+      <input type="text" name="q" placeholder="Cari barang..." value="{{ search_query }}" />
+    </form>
+  </div>
+
+  <div class="items-grid">
+    {% if items %}
+      {% for item in items %}
+      <a href="/item/{{ item.code }}" class="item-card">
+        <div class="card-img">
+          {% if item.image_url %}
+            <img src="{{ item.image_url }}" alt="{{ item.title }}" loading="lazy" />
+          {% else %}
+            📦
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <div class="card-title">{{ item.title }}</div>
+          <div class="card-meta">
+            <span>{{ item.code }}</span>
+            <span class="status-badge status-{{ item.status }}">
+              {% if item.status == 'LOST' %}Hilang
+              {% elif item.status == 'FOUND' %}Temuan
+              {% else %}Diklaim{% endif %}
+            </span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    {% else %}
+      <div style="grid-column: 1 / -1; text-align: center; padding: 4rem; color: var(--text-muted);">
+        Tidak ada barang ditemukan.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

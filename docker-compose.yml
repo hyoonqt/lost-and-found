@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    container_name: lostnfound
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    env_file:
+        - .env
+    restart: unless-stopped

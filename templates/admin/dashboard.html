@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Lost &amp; Found Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #0066FF;
+      --primary-hover: #0052cc;
+      --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #fae8ff 100%);
+      --surface: #ffffff;
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+      --border-light: #f1f5f9;
+      --sidebar-width: 240px;
+    }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-dark);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      padding: 1rem;
+      display: flex;
+    }
+
+    /* ── App Container (Glass/White Wrapper) ── */
+    .app-container {
+      display: flex;
+      width: 100%;
+      background: var(--surface);
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--surface);
+      border-right: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 1rem;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0.5rem;
+      margin-bottom: 2rem;
+    }
+    .sidebar-logo-icon {
+      background: var(--primary); color: #fff;
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 1.2rem;
+    }
+    .sidebar-logo-text { font-weight: 700; font-size: 1.1rem; }
+    
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 0.75rem 1rem;
+      color: var(--text-muted);
+      font-size: 0.9rem; font-weight: 500;
+      text-decoration: none;
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+    .nav-item:hover { background: var(--border-light); color: var(--text-dark); }
+    .nav-item.active { background: var(--primary); color: white; }
+
+    /* ── Main Content ── */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #fafafc; /* Slightly darker than sidebar for contrast */
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      padding: 1.5rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border-light);
+    }
+    .search-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: #f1f5f9;
+      padding: 0.6rem 1rem;
+      border-radius: 20px;
+      width: 300px;
+    }
+    .search-bar input {
+      border: none; background: transparent; outline: none;
+      width: 100%; font-family: 'Inter', sans-serif; font-size: 0.9rem;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
+    .user-profile {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--border-light); padding: 0.4rem 0.8rem; border-radius: 20px;
+    }
+    .user-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--primary); color: white;
+      display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold;
+    }
+
+    /* ── Content Body ── */
+    .content-body { padding: 2rem; flex: 1; overflow-y: auto; }
+    
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .page-title { font-size: 1.5rem; font-weight: 700; }
+    
+    .btn {
+      padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 500; font-size: 0.85rem;
+      cursor: pointer; text-decoration: none; border: 1px solid transparent; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { border-color: var(--border-light); color: var(--text-dark); background: var(--surface); }
+    .btn-outline:hover { border-color: #cbd5e1; }
+    .btn-danger { border-color: #ffe4e6; color: #e11d48; background: #fff1f2; }
+
+    /* ── Filter Pills (Like "Upcoming", "Pending") ── */
+    .filters { display: flex; gap: 10px; margin-bottom: 1.5rem; }
+    .filter-pill {
+      padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 500;
+      background: var(--surface); border: 1px solid var(--border-light); color: var(--text-muted);
+    }
+    .filter-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* ── Card List (Replaces Table) ── */
+    .list-container { display: flex; flex-direction: column; gap: 1rem; }
+    .list-card {
+      background: var(--surface); border: 1px solid var(--border-light);
+      border-radius: 16px; padding: 1.2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: box-shadow 0.2s;
+    }
+    .list-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    
+    .item-info { display: flex; align-items: center; gap: 15px; flex: 2; }
+    .item-thumb {
+      width: 48px; height: 48px; border-radius: 10px; background: #f8fafc;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .item-details h4 { font-size: 0.95rem; margin-bottom: 3px; }
+    .item-code { font-size: 0.75rem; color: var(--text-muted); background: var(--border-light); padding: 2px 6px; border-radius: 4px; }
+    
+    .item-meta { flex: 1; font-size: 0.85rem; color: var(--text-muted); }
+    .item-meta strong { color: var(--text-dark); display: block; margin-bottom: 3px; font-weight: 500; }
+    
+    .item-actions { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+    
+    .status-select {
+      padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border-light);
+      font-size: 0.8rem; outline: none; background: var(--surface);
+    }
+
+    /* Modal styling kept functionally identical but visually updated */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; z-index: 200;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal { background: var(--surface); padding: 2rem; border-radius: 20px; width: 90%; max-width: 400px; }
+    .modal h3 { margin-bottom: 1rem; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">L</div>
+      <div class="sidebar-logo-text">Lost & Found</div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/admin/dashboard" class="nav-item active">Dashboard</a>
+      <a href="/admin/items/new" class="nav-item">Tambah Barang</a>
+      <a href="/admin/claims" class="nav-item">Daftar Klaim</a>
+      
+      <a href="/" class="nav-item" style="margin-top: auto;">Lihat Publik</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" placeholder="Search items...">
+      </div>
+      <div class="topbar-right">
+        <a href="/docs" target="_blank" class="btn btn-outline" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">API Docs</a>
+        <div class="user-profile">
+          <div class="user-avatar">{{ admin.username[0].upper() }}</div>
+          <span style="font-size: 0.85rem; font-weight: 500;">{{ admin.username }}</span>
+        </div>
+        <a href="/admin/logout" class="btn btn-outline" style="border:none; color: var(--text-muted);">Log out</a>
+      </div>
+    </div>
+
+    <div class="content-body">
+      <div class="page-header">
+        <h1 class="page-title">Items Inventory</h1>
+        <a href="/admin/items/new" class="btn btn-primary">+ Create Item</a>
+      </div>
+
+      <div class="filters">
+        <div class="filter-pill active">All ({{ counts.ALL }})</div>
+        <div class="filter-pill">Lost ({{ counts.LOST }})</div>
+        <div class="filter-pill">Found ({{ counts.FOUND }})</div>
+      </div>
+
+      <div class="list-container">
+        {% if items %}
+          {% for item in items %}
+          <div class="list-card">
+            
+            <div class="item-info">
+              <div class="item-thumb">
+                {% if item.image_url %}
+                  <img src="{{ item.image_url }}" alt="{{ item.title }}" />
+                {% else %}
+                  📦
+                {% endif %}
+              </div>
+              <div class="item-details">
+                <h4>{{ item.title }}</h4>
+                <span class="item-code">{{ item.code }}</span>
+              </div>
+            </div>
+
+            <div class="item-meta">
+              <strong>Location</strong>
+              {{ item.location if item.location else 'Unknown' }}
+            </div>
+
+            <div class="item-meta">
+              <strong>Date</strong>
+              {{ item.created_at.strftime('%d %b %Y') if item.created_at else '—' }}
+            </div>
+
+            <div class="item-actions">
+              <form method="POST" action="/admin/items/{{ item.id }}/status" style="margin:0;">
+                <select class="status-select" name="status" onchange="this.form.submit()">
+                  <option value="LOST"    {% if item.status=='LOST' %}selected{% endif %}>Hilang</option>
+                  <option value="FOUND"   {% if item.status=='FOUND' %}selected{% endif %}>Ditemukan</option>
+                  <option value="CLAIMED" {% if item.status=='CLAIMED' %}selected{% endif %}>Diklaim</option>
+                </select>
+              </form>
+              <a href="/admin/items/{{ item.id }}/edit" class="btn btn-outline">Edit</a>
+              <button class="btn btn-danger" onclick="confirmDelete({{ item.id }}, '{{ item.title | replace("'", "\\'") }}')">Delete</button>
+            </div>
+
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="text-align:center; padding: 3rem; color: var(--text-muted);">
+            No items found. <a href="/admin/items/new" style="color: var(--primary);">Add one now</a>.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <h3>Delete Item?</h3>
+    <p id="deleteMsg" style="color: var(--text-muted); font-size: 0.9rem;">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <form id="deleteForm" method="POST" style="display:inline;">
+        <button type="submit" class="btn btn-danger" style="background:#e11d48; color:white;">Confirm Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function confirmDelete(id, name) {
+    document.getElementById('deleteMsg').textContent = 'Delete "' + name + '"? This action cannot be undone.';
+    document.getElementById('deleteForm').action = '/admin/items/' + id + '/delete';
+    document.getElementById('deleteModal').classList.add('show');
+  }
+  function closeModal() { document.getElementById('deleteModal').classList.remove('show'); }
+  document.getElementById('deleteModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+</script>
+</body>
+</html>

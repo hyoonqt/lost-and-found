@@ -1,0 +1,16 @@
+# Salin file sebagai .env lalu isi nilainya
+# cp .env.example .env
+
+# Contoh: bisa generate dengan: python -c "import secrets; print(secrets.token_hex(32))"
+SECRET_KEY=
+
+# Jangan diubah kecuali pake db lain
+DATABASE_URL=sqlite:///./data/lostnfound.db
+
+# Contoh: 6281234567890
+WHATSAPP_NUMBER=
+
+# Nama dan sekolah yang tampil di halaman publik
+ADMIN_NAME=
+SCHOOL_NAME=
+

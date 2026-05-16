@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Lost & Found{% endblock %} — {{ school_name if school_name is defined else 'School' }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #0066FF;
+      --primary-hover: #0052cc;
+      --bg-body: #fafafc;
+      --surface: #ffffff;
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+      --border-light: #e2e8f0;
+    }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-body);
+      color: var(--text-dark);
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      background: var(--surface);
+      padding: 1rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+    }
+    .navbar-brand {
+      font-weight: 700; font-size: 1.2rem;
+      text-decoration: none; color: var(--primary);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .navbar-links { display: flex; align-items: center; gap: 2rem; }
+    .navbar-links a {
+      font-size: 0.9rem; font-weight: 500;
+      text-decoration: none; color: var(--text-muted);
+      transition: color 0.2s;
+    }
+    .navbar-links a:hover { color: var(--primary); }
+
+    .main { max-width: 1200px; margin: 0 auto; padding: 2rem 2.5rem 4rem; }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid var(--border-light);
+      padding: 2rem 3rem;
+      display: flex; justify-content: space-between;
+      font-size: 0.85rem; color: var(--text-muted);
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">
+      <span style="background:var(--primary); color:white; padding: 4px 8px; border-radius:6px; font-size:1rem;">L</span>
+      Lost &amp; Found
+    </a>
+    <div class="navbar-links">
+      <a href="/">Koleksi</a>
+      {% if request.session.get('admin_id') %}
+        <a href="/admin/dashboard" style="background: var(--primary); color: white; padding: 0.4rem 1rem; border-radius: 8px;">Dashboard</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  {% block content %}{% endblock %}
+
+  <footer class="footer">
+    <span>Lost &amp; Found System &copy; 2026</span>
+    <span>{{ school_name if school_name is defined else '' }}</span>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}404 - Tidak Ditemukan{% endblock %}
+{% block content %}
+<div class="main" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 6rem 1rem;">
+  <div style="font-size: 5rem; margin-bottom: 1rem; background: var(--surface); width: 120px; height: 120px; border-radius: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 40px rgba(0,0,0,0.05); border: 1px solid var(--border-light);">
+    🔍
+  </div>
+  <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-dark);">Tidak Ditemukan</h1>
+  <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 2rem; max-width: 400px;">
+    Barang atau halaman yang Anda cari mungkin sudah dipindahkan atau tidak pernah ada.
+  </p>
+  <a href="/" style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border-radius: 12px; text-decoration: none; font-weight: 500; transition: background 0.2s;" onmouseover="this.style.background='var(--primary-hover)'" onmouseout="this.style.background='var(--primary)'">
+    Kembali ke Beranda
+  </a>
+</div>
+{% endblock %}
