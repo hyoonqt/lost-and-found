@@ -52,6 +52,24 @@ class ClaimRequest(Base):
     created_at       = Column(DateTime, default=datetime.utcnow)
 
 
+class Student(Base):
+    __tablename__ = "students"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    rfid_uid    = Column(String(100), unique=True, index=True, nullable=False)
+    nis         = Column(String(50), unique=True, nullable=False)
+    name        = Column(String(200), nullable=True)
+    grade_class = Column(String(50), nullable=True)
+    contact     = Column(String(50), nullable=True)
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id              = Column(Integer, primary_key=True, index=True)
+    activity_type   = Column(String(50), nullable=False)
+    description     = Column(Text, nullable=False)
+    created_at      = Column(DateTime, default=datetime.utcnow)
+
 def get_db():
     db = SessionLocal()
     try:

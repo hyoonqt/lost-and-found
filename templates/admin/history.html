@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Riwayat Aktivitas — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --primary: #0066FF; --surface: #ffffff; --text-dark: #1e293b; --text-muted: #64748b; --border-light: #f1f5f9; --sidebar-width: 240px; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: linear-gradient(135deg, #eef2ff 0%, #fae8ff 100%); color: var(--text-dark); min-height: 100vh; padding: 1rem; display: flex; -webkit-font-smoothing: antialiased; }
+    
+    .app-container { display: flex; width: 100%; background: var(--surface); border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); overflow: hidden; }
+    
+    .sidebar { width: var(--sidebar-width); background: var(--surface); border-right: 1px solid var(--border-light); padding: 1.5rem 1rem; display: flex; flex-direction: column; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 0.75rem 1rem; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; text-decoration: none; border-radius: 12px; transition: all 0.2s; }
+    .nav-item:hover { background: var(--border-light); color: var(--text-dark); }
+    .nav-item.active { background: var(--primary); color: white; }
+    
+    .main-content { flex: 1; display: flex; flex-direction: column; background: #fafafc; }
+    
+    .topbar { padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: flex-end; background: var(--surface); border-bottom: 1px solid var(--border-light); }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
+    .user-profile { display: flex; align-items: center; gap: 10px; background: var(--border-light); padding: 0.4rem 0.8rem; border-radius: 20px; }
+    .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; }
+    
+    .content-body { padding: 2rem 3rem; flex: 1; overflow-y: auto; }
+    .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .page-sub { color: var(--text-muted); margin-bottom: 2rem; font-size: 0.9rem; }
+
+    /* Timeline Styles */
+    .timeline { position: relative; max-width: 800px; padding-left: 20px; border-left: 2px solid var(--border-light); }
+    .timeline-item { position: relative; padding-bottom: 2rem; padding-left: 20px; }
+    .timeline-item:last-child { padding-bottom: 0; }
+    
+    .timeline-dot { position: absolute; left: -26px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); border: 4px solid #fafafc; box-sizing: content-box; }
+    
+    .timeline-content { background: white; border: 1px solid var(--border-light); border-radius: 12px; padding: 1.2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+    .timeline-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .timeline-time { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+    .timeline-desc { font-size: 0.95rem; line-height: 1.5; color: var(--text-dark); }
+    
+    /* Dynamic Badges */
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; }
+    .badge-add { background: #e0f2fe; color: #0284c7; }
+    .badge-approve { background: #dcfce7; color: #16a34a; }
+    .badge-reject { background: #ffe4e6; color: #e11d48; }
+    .badge-update { background: #fef9c3; color: #ca8a04; }
+    .badge-delete { background: #f3f4f6; color: #4b5563; }
+    .badge-new { background: #fae8ff; color: #c026d3; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <aside class="sidebar">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; padding: 0 1rem;">
+      <div style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem;">L</div>
+      <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-dark);">Lost & Found</div>
+    </div>
+    
+    <nav style="display: flex; flex-direction: column; gap: 5px;">
+      <a href="/admin/dashboard" class="nav-item">Dashboard</a>
+      <a href="/admin/items/new" class="nav-item">Tambah Barang</a>
+      <a href="/admin/claims" class="nav-item">Daftar Klaim</a>
+      <a href="/admin/reviews" class="nav-item">Review Publik</a>
+      <a href="/admin/history" class="nav-item active">Riwayat Sistem</a>
+    </nav>
+    
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 5px;">
+      <a href="/" class="nav-item" target="_blank">Lihat Publik</a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-right">
+        <div class="user-profile">
+          <div class="user-avatar">{{ admin.username[0].upper() if admin else 'A' }}</div>
+          <span style="font-size: 0.85rem; font-weight: 500;">{{ admin.username if admin else 'Admin' }}</span>
+        </div>
+        <a href="/admin/logout" style="text-decoration:none; color: var(--text-muted); font-size:0.85rem;">Log out</a>
+      </div>
+    </div>
+
+    <div class="content-body">
+      <h1 class="page-title">Audit Trail & Riwayat</h1>
+      <p class="page-sub">Catatan seluruh aktivitas dan perubahan data dalam sistem.</p>
+
+      <div class="timeline">
+        {% if logs %}
+          {% for log in logs %}
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-meta">
+                <span class="timeline-time">{{ log.created_at.strftime('%d %b %Y - %H:%M') }} WIB</span>
+                
+                {% set type = log.activity_type %}
+                {% set badge_class = 'badge-update' %}
+                
+                {% if 'ADD' in type %} {% set badge_class = 'badge-add' %}
+                {% elif 'APPROVE' in type %} {% set badge_class = 'badge-approve' %}
+                {% elif 'REJECT' in type %} {% set badge_class = 'badge-reject' %}
+                {% elif 'DELETE' in type %} {% set badge_class = 'badge-delete' %}
+                {% elif 'NEW' in type %} {% set badge_class = 'badge-new' %}
+                {% endif %}
+
+                <span class="badge {{ badge_class }}">{{ type | replace('_', ' ') }}</span>
+              </div>
+              <div class="timeline-desc">{{ log.description }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Belum ada aktivitas terekam di sistem.</div>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

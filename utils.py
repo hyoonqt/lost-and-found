@@ -5,7 +5,7 @@ from database import Item
 
 def generate_item_code(db: Session) -> str:
     year = datetime.now().year
-    prefix = f"LF-{year}-"
+    prefix = f"{year}-"
 
     last_item = (
         db.query(Item)

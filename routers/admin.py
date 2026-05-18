@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request, Form, UploadFile, File, HTTPExc
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from database import get_db, Item, Admin, ClaimRequest
+from database import get_db, Item, Admin, ClaimRequest, ActivityLog, Student
 from auth import hash_password, verify_password, login_admin, logout_admin, get_current_admin
 from utils import generate_item_code
 from typing import Optional
@@ -24,7 +24,6 @@ def get_admin_or_redirect(request: Request, db: Session):
         return None
     admin = db.query(Admin).filter(Admin.id == admin_id).first()
     return admin
-
 
 
 @router.get("/login")
@@ -80,7 +79,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     )
 
 
-# ── Create Item ────────────────────────────────────────────────────────────────
+# ── Create & Edit Item ─────────────────────────────────────────────────────────
 
 @router.get("/items/new")
 async def new_item_page(request: Request, db: Session = Depends(get_db)):
@@ -124,15 +123,14 @@ async def create_item(
 
     code = generate_item_code(db)
     item = Item(
-        code=code,
-        title=title,
-        description=description,
-        status=status,
-        location=location,
-        reporter_name=reporter_name,
-        image_url=image_url,
+        code=code, title=title, description=description, status=status,
+        location=location, reporter_name=reporter_name, image_url=image_url,
     )
     db.add(item)
+    
+    # [HISTORY]
+    db.add(ActivityLog(activity_type="ADD_ITEM", description=f"Admin menambahkan barang baru: '{title}' ({code})."))
+    
     db.commit()
     return RedirectResponse("/admin/dashboard", status_code=302)
 
@@ -182,7 +180,6 @@ async def update_item(
         async with aiofiles.open(filepath, "wb") as f:
             content = await image.read()
             await f.write(content)
-        # Remove old image
         if item.image_url:
             old_path = item.image_url.lstrip("/")
             if os.path.exists(old_path):
@@ -195,11 +192,15 @@ async def update_item(
     item.location = location
     item.reporter_name = reporter_name
     item.updated_at = datetime.utcnow()
+    
+    # [HISTORY]
+    db.add(ActivityLog(activity_type="EDIT_ITEM", description=f"Admin mengubah data barang: '{item.title}' ({item.code})."))
+    
     db.commit()
     return RedirectResponse("/admin/dashboard", status_code=302)
 
 
-# ── Delete Item ────────────────────────────────────────────────────────────────
+# ── Delete & Update Status ─────────────────────────────────────────────────────
 
 @router.post("/items/{item_id}/delete")
 async def delete_item(request: Request, item_id: int, db: Session = Depends(get_db)):
@@ -214,6 +215,9 @@ async def delete_item(request: Request, item_id: int, db: Session = Depends(get_
             if os.path.exists(old_path):
                 os.remove(old_path)
         db.delete(item)
+        
+        # [HISTORY]
+        db.add(ActivityLog(activity_type="DELETE_ITEM", description=f"Admin menghapus barang: '{item.title}' ({item.code})."))
         db.commit()
 
     return RedirectResponse("/admin/dashboard", status_code=302)
@@ -232,23 +236,25 @@ async def update_status(
 
     item = db.query(Item).filter(Item.id == item_id).first()
     if item and status in ["LOST", "FOUND", "CLAIMED"]:
+        old_status = item.status
         item.status = status
         item.updated_at = datetime.utcnow()
+        
+        # [HISTORY]
+        db.add(ActivityLog(activity_type="UPDATE_STATUS", description=f"Admin mengubah status '{item.title}' dari {old_status} menjadi {status}."))
         db.commit()
 
     return RedirectResponse("/admin/dashboard", status_code=302)
 
 
+# ── Claims & Reviews ───────────────────────────────────────────────────────────
+
 @router.get("/claims")
 async def list_claims(request: Request, db: Session = Depends(get_db)):
-    admin_id = request.session.get("admin_id")
-    if not admin_id:
+    admin = get_admin_or_redirect(request, db)
+    if not admin:
         return RedirectResponse("/admin/login", status_code=303)
 
-    admin = db.query(Admin).filter(Admin.id == admin_id).first()
-
-    # FIX 1: Tambahkan filter PENDING agar yang sudah diapprove/direject hilang
-    # FIX 2: Gunakan JOIN dengan tabel Item untuk fitur Preview Barang
     claims_data = (
         db.query(ClaimRequest, Item)
         .join(Item, ClaimRequest.item_id == Item.id)
@@ -256,57 +262,81 @@ async def list_claims(request: Request, db: Session = Depends(get_db)):
         .order_by(ClaimRequest.created_at.desc())
         .all()
     )
-
-    return templates.TemplateResponse("admin/claims_list.html", {
-        "request": request, 
-        "admin": admin, 
-        "claims_data": claims_data 
-    })
+    return templates.TemplateResponse("admin/claims_list.html", {"request": request, "admin": admin, "claims_data": claims_data})
 
 
 @router.post("/claims/{claim_id}/process")
-async def process_claim(claim_id: int, action: str = Form(...), db: Session = Depends(get_db)):
+async def process_claim(
+    request: Request,
+    claim_id: int,
+    action: str = Form(...),
+    rfid_uid: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
+):
+    admin = get_admin_or_redirect(request, db)
+    if not admin:
+        return RedirectResponse("/admin/login", status_code=303)
+
     claim = db.query(ClaimRequest).filter(ClaimRequest.id == claim_id).first()
-    if claim:
-        claim.status = "APPROVED" if action == "approve" else "REJECTED"
-        if action == "approve":
-            item = db.query(Item).filter(Item.id == claim.item_id).first()
-            if item: item.status = "CLAIMED"
-        db.commit()
+    if not claim:
+        raise HTTPException(status_code=404, detail="Klaim tidak ditemukan")
+
+    item = db.query(Item).filter(Item.id == claim.item_id).first()
+
+    if action == "approve":
+        if not rfid_uid:
+            raise HTTPException(status_code=400, detail="RFID wajib diisi!")
+        
+        student = db.query(Student).filter(Student.rfid_uid == rfid_uid).first()
+        if student:
+            desc = f"Klaim #{claim.id} disetujui. Barang '{item.title}' diserahkan kepada {student.name} ({student.grade_class}) - NIS: {student.nis} via RFID."
+        else:
+            desc = f"Klaim #{claim.id} disetujui. Barang '{item.title}' diserahkan via RFID UID: {rfid_uid} (Data Siswa Tidak Terdaftar)."
+        
+        claim.status = "APPROVED"
+        claim.rfid_uid = rfid_uid
+        if item:
+            item.status = "CLAIMED"
+            
+        db.add(ActivityLog(activity_type="APPROVE_CLAIM", description=desc))
+            
+    elif action == "reject":
+        desc = f"Klaim #{claim.id} atas barang '{item.title}' dari {claim.claimer_name} ditolak."
+        if claim.proof_image_url:
+            old_path = claim.proof_image_url.lstrip("/")
+            if os.path.exists(old_path):
+                import os
+                os.remove(old_path)
+        db.delete(claim)
+        db.add(ActivityLog(activity_type="REJECT_CLAIM", description=desc))
+        
+    db.commit()
     return RedirectResponse("/admin/claims", status_code=303)
 
 
-# --- REVIEW LAPORAN PUBLIK ---
-
 @router.get("/reviews")
 async def review_list(request: Request, db: Session = Depends(get_db)):
-    admin_id = request.session.get("admin_id")
-    if not admin_id:
+    admin = get_admin_or_redirect(request, db)
+    if not admin:
         return RedirectResponse("/admin/login", status_code=303)
 
-    # Ambil admin untuk nampilin nama di topbar (kalau ada)
-    admin = db.query(Admin).filter(Admin.id == admin_id).first()
-
-    # Ambil semua item yang belum di-approve
     pending_items = db.query(Item).filter(Item.is_approved == False).order_by(Item.created_at.desc()).all()
-    
-    return templates.TemplateResponse("admin/review_list.html", {
-        "request": request, 
-        "admin": admin, 
-        "items": pending_items
-    })
+    return templates.TemplateResponse("admin/review_list.html", {"request": request, "admin": admin, "items": pending_items})
+
 
 @router.post("/reviews/{item_id}/process")
 async def process_review(request: Request, item_id: int, action: str = Form(...), db: Session = Depends(get_db)):
-    if not request.session.get("admin_id"):
+    admin = get_admin_or_redirect(request, db)
+    if not admin:
         return RedirectResponse("/admin/login", status_code=303)
         
     item = db.query(Item).filter(Item.id == item_id, Item.is_approved == False).first()
     if item:
         if action == "approve":
             item.is_approved = True
+            db.add(ActivityLog(activity_type="APPROVE_REPORT", description=f"Laporan publik disetujui: '{item.title}' ({item.code})."))
         elif action == "reject":
-            # Hapus file foto jika ditolak
+            db.add(ActivityLog(activity_type="REJECT_REPORT", description=f"Laporan publik ditolak: '{item.title}' dari {item.reporter_name}."))
             if item.image_url:
                 old_path = item.image_url.lstrip("/")
                 if os.path.exists(old_path):
@@ -316,3 +346,16 @@ async def process_review(request: Request, item_id: int, action: str = Form(...)
         db.commit()
             
     return RedirectResponse("/admin/reviews", status_code=303)
+
+
+# ── History / Audit Log ────────────────────────────────────────────────────────
+
+@router.get("/history")
+async def history_page(request: Request, db: Session = Depends(get_db)):
+    admin = get_admin_or_redirect(request, db)
+    if not admin:
+        return RedirectResponse("/admin/login", status_code=303)
+
+    # Ambil semua log, urutkan dari yang terbaru
+    logs = db.query(ActivityLog).order_by(ActivityLog.created_at.desc()).all()
+    return templates.TemplateResponse("admin/history.html", {"request": request, "admin": admin, "logs": logs})

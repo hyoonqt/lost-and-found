@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request, Query, Form, HTTPException, Fil
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from database import get_db, Item, ClaimRequest
+from database import get_db, Item, ClaimRequest, ActivityLog
 from typing import Optional
 from utils import generate_item_code
 import os
@@ -177,7 +177,13 @@ async def submit_report(
             image_url=image_url,
             is_approved=False
         )
-
         db.add(new_item)
+
+        log = ActivityLog(
+            activity_type="NEW_REPORT",
+            description = f"Laporan publik baru ({status}): '{title}' dilaporkan oleh {reporter_name}"
+        )
+        db.add(log)
+        
         db.commit()
         return RedirectResponse("/?succes=reported", status_code=303)
