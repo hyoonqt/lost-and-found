@@ -1,160 +1,198 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Daftar Klaim — Lost &amp; Found Admin</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <title>Daftar Klaim — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Menggunakan base styling yang sama persis dengan dashboard */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --primary: #0066FF; --primary-hover: #0052cc;
-      --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #fae8ff 100%);
-      --surface: #ffffff; --text-dark: #1e293b; --text-muted: #64748b;
-      --border-light: #f1f5f9; --sidebar-width: 240px;
-    }
-    body {
-      font-family: 'Inter', sans-serif; background: var(--bg-gradient);
-      color: var(--text-dark); min-height: 100vh; padding: 1rem; display: flex;
-    }
-    .app-container {
-      display: flex; width: 100%; background: var(--surface);
-      border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); overflow: hidden;
-    }
-    .sidebar { width: var(--sidebar-width); border-right: 1px solid var(--border-light); display: flex; flex-direction: column; padding: 1.5rem 1rem; }
-    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0.5rem; margin-bottom: 2rem; }
-    .sidebar-logo-icon { background: var(--primary); color: #fff; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; }
-    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    :root { --primary: #0066FF; --surface: #ffffff; --text-dark: #1e293b; --text-muted: #64748b; --border-light: #f1f5f9; --sidebar-width: 240px; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: linear-gradient(135deg, #eef2ff 0%, #fae8ff 100%); color: var(--text-dark); min-height: 100vh; padding: 1rem; display: flex; -webkit-font-smoothing: antialiased; }
+    
+    .app-container { display: flex; width: 100%; background: var(--surface); border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); overflow: hidden; }
+    
+    .sidebar { width: var(--sidebar-width); background: var(--surface); border-right: 1px solid var(--border-light); padding: 1.5rem 1rem; display: flex; flex-direction: column; }
     .nav-item { display: flex; align-items: center; gap: 12px; padding: 0.75rem 1rem; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; text-decoration: none; border-radius: 12px; transition: all 0.2s; }
     .nav-item:hover { background: var(--border-light); color: var(--text-dark); }
     .nav-item.active { background: var(--primary); color: white; }
     
     .main-content { flex: 1; display: flex; flex-direction: column; background: #fafafc; }
-    .topbar { padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; background: var(--surface); border-bottom: 1px solid var(--border-light); }
-    .topbar-right { display: flex; align-items: center; gap: 1rem; margin-left: auto; }
+    
+    .topbar { padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: flex-end; background: var(--surface); border-bottom: 1px solid var(--border-light); }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
     .user-profile { display: flex; align-items: center; gap: 10px; background: var(--border-light); padding: 0.4rem 0.8rem; border-radius: 20px; }
     .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; }
     
     .content-body { padding: 2rem; flex: 1; overflow-y: auto; }
-    .page-header { margin-bottom: 2rem; }
-    .page-title { font-size: 1.5rem; font-weight: 700; }
-
-    .btn { padding: 0.5rem 1rem; border-radius: 8px; font-weight: 500; font-size: 0.8rem; cursor: pointer; border: none; transition: all 0.2s; }
-    .btn-approve { background: #16a34a; color: white; }
-    .btn-approve:hover { background: #15803d; }
-    .btn-reject { background: #fff1f2; color: #e11d48; border: 1px solid #ffe4e6; }
-    .btn-reject:hover { background: #ffe4e6; }
-
-    /* CSS grid spesifik untuk form klaim */
-    .claims-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
-    .claim-card { background: var(--surface); border: 1px solid var(--border-light); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+    .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .page-sub { color: var(--text-muted); margin-bottom: 2rem; font-size: 0.9rem; }
     
-    .claim-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-light); padding-bottom: 1rem; }
-    .claim-item-name { font-weight: 600; color: var(--text-dark); margin-bottom: 4px; }
-    .claim-item-code { font-family: monospace; font-size: 0.8rem; background: var(--border-light); padding: 2px 6px; border-radius: 4px; color: var(--text-muted); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
     
-    .claim-status { font-size: 0.75rem; font-weight: 600; padding: 4px 8px; border-radius: 12px; }
-    .status-PENDING { background: #fef9c3; color: #a16207; }
-    .status-APPROVED { background: #dcfce7; color: #16a34a; }
-    .status-REJECTED { background: #fee2e2; color: #b91c1c; }
+    .card { background: white; border: 1px solid var(--border-light); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem; transition: box-shadow 0.2s; }
+    .card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .card-title { font-size: 1.1rem; font-weight: 700; color: var(--text-dark); border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+    
+    .detail-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; }
+    .detail-value { font-size: 0.95rem; font-weight: 500; color: var(--text-dark); }
+    .proof-box { background: var(--border-light); padding: 1rem; border-radius: 8px; font-size: 0.85rem; font-style: italic; margin-top: 5px; }
+    
+    .actions { display: flex; gap: 10px; margin-top: auto; padding-top: 1rem; }
+    .btn { flex: 1; padding: 0.6rem 1.2rem; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-align: center; color: white; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.9; }
+    .btn-verify { background: #16a34a; }
+    .btn-reject { background: #e11d48; }
+    .btn-wa { background: #25D366; color: white; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; margin-top: 5px; }
 
-    .claim-details { font-size: 0.85rem; color: var(--text-dark); line-height: 1.5; }
-    .detail-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 2px; margin-top: 10px; }
-    .proof-box { background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid var(--border-light); margin-top: 5px; font-style: italic; color: var(--text-muted); }
-
-    .claim-actions { display: flex; gap: 10px; margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-light); }
+    /* Modal RFID */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; }
+    .modal-card { background: var(--surface); padding: 2.5rem; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    .rfid-icon { font-size: 4rem; margin-bottom: 1rem; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+    .rfid-input { width: 100%; padding: 1rem; margin-top: 1.5rem; border: 2px solid var(--primary); border-radius: 12px; font-size: 1.2rem; text-align: center; outline: none; background: #f8fafc; }
   </style>
 </head>
 <body>
 
 <div class="app-container">
   <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="sidebar-logo-icon">L</div>
-      <div class="sidebar-logo-text">Lost & Found</div>
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; padding: 0 1rem;">
+      <div style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem;">L</div>
+      <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-dark);">Lost & Found</div>
     </div>
-    <nav class="sidebar-nav">
-      <a href="/admin/dashboard" class="nav-item">Dashboard</a>
-      <a href="/admin/items/new" class="nav-item">Tambah Barang</a>
-      <a href="/admin/claims" class="nav-item active">Daftar Klaim</a>
-      <a href="/" class="nav-item" style="margin-top: auto;">Lihat Publik</a>
+    
+    <nav style="display: flex; flex-direction: column; gap: 5px;">
+      <a href="/admin/dashboard" class="nav-item {% if request.url.path == '/admin/dashboard' %}active{% endif %}">Dashboard</a>
+      <a href="/admin/items/new" class="nav-item {% if '/admin/items' in request.url.path %}active{% endif %}">Tambah Barang</a>
+      <a href="/admin/claims" class="nav-item {% if '/admin/claims' in request.url.path %}active{% endif %}">Daftar Klaim</a>
+      <a href="/admin/reviews" class="nav-item {% if '/admin/reviews' in request.url.path %}active{% endif %}">Review Publik</a>
     </nav>
+    
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 5px;">
+      <a href="/" class="nav-item" target="_blank">Lihat Publik</a>
+    </div>
   </aside>
 
   <main class="main-content">
     <div class="topbar">
       <div class="topbar-right">
+        <a href="/docs" target="_blank" style="text-decoration:none; padding: 0.4rem 0.8rem; border-radius:10px; border:1px solid var(--border-light); font-size: 0.75rem; color:var(--text-dark);">API Docs</a>
         <div class="user-profile">
-          <div class="user-avatar">{{ admin.username[0].upper() }}</div>
-          <span style="font-size: 0.85rem; font-weight: 500;">{{ admin.username }}</span>
+          <div class="user-avatar">{{ admin.username[0].upper() if admin else 'A' }}</div>
+          <span style="font-size: 0.85rem; font-weight: 500;">{{ admin.username if admin else 'Admin' }}</span>
         </div>
-        <a href="/admin/logout" style="text-decoration: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 500;">Log out</a>
+        <a href="/admin/logout" style="text-decoration:none; color: var(--text-muted); font-size:0.85rem;">Log out</a>
       </div>
     </div>
 
     <div class="content-body">
-      <div class="page-header">
-        <h1 class="page-title">Permintaan Klaim Barang</h1>
-      </div>
+      <h1 class="page-title">Validasi Klaim Barang</h1>
+      <p class="page-sub">Verifikasi bukti kepemilikan dan tap kartu RFID pelajar saat penyerahan barang.</p>
 
-      <div class="claims-grid">
-        {% if claims %}
-          {% for claim in claims %}
-          <div class="claim-card">
-            <div class="claim-header">
-              <div>
-                <div class="claim-item-name">{{ claim.item.title if claim.item else 'Item Dihapus' }}</div>
-                <div class="claim-item-code">{{ claim.item.code if claim.item else 'N/A' }}</div>
+      <div class="grid">
+        {% if claims_data %}
+          {% for claim, item in claims_data %}
+          <div class="card">
+            <div class="card-title">Klaim ID: #{{ claim.id }}</div>
+            
+            <div style="display: flex; gap: 12px; background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid var(--border-light); margin-bottom: 0.5rem;">
+              <div style="width: 60px; height: 60px; border-radius: 8px; overflow: hidden; background: #e2e8f0; display:flex; align-items:center; justify-content:center; flex-shrink: 0;">
+                {% if item.image_url %}
+                  <img src="{{ item.image_url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                  <span style="font-size: 1.5rem;">📦</span>
+                {% endif %}
               </div>
-              <div class="claim-status status-{{ claim.status }}">{{ claim.status }}</div>
+              <div style="display: flex; flex-direction: column; justify-content: center;">
+                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;">TARGET KLAIM</span>
+                <a href="/item/{{ item.code }}" target="_blank" style="font-size: 0.95rem; font-weight: 700; color: var(--text-dark); text-decoration: none; margin-bottom: 2px;">{{ item.title }}</a>
+                <span style="font-size: 0.75rem; color: var(--primary); font-family: monospace; font-weight: 600;">{{ item.code }}</span>
+              </div>
+            </div>
+            <div>
+              <div class="detail-label">Pengklaim</div>
+              <div class="detail-value">{{ claim.claimer_name }} ({{ claim.claimer_class }})</div>
+            </div>
+            
+            <div>
+              <div class="detail-label">Kontak</div>
+              <div class="detail-value">{{ claim.contact_number }}</div>
+              <a href="https://wa.me/{{ claim.contact_number|replace('08', '628') }}" target="_blank" class="btn-wa">Hubungi WA</a>
             </div>
 
-            <div class="claim-details">
-              <div class="detail-label">Diklaim Oleh</div>
-              <div><strong>{{ claim.claimer_name }}</strong> ({{ claim.claimer_class }})</div>
-
-              <div class="detail-label">Kontak</div>
-              <div style="margin-bottom: 5px;">{{ claim.contact_number }}</div>
-              <a href="https://wa.me/{{ claim.contact_number|replace('08', '628') }}" target="_blank" style="display: inline-block; background: #0066FF; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; text-decoration: none; font-weight: 600;">Hubungi via WA</a>
-
-              <div class="detail-label">Tanggal Pengajuan</div>
-              <div>{{ claim.created_at.strftime('%d %b %Y, %H:%M') }}</div>
-
-              <div class="detail-label">Bukti Ciri Khusus</div>
+            <div>
+              <div class="detail-label">Bukti Khusus</div>
               <div class="proof-box">"{{ claim.proof_description }}"</div>
+            </div>
 
-              {% if claim.proof_image_url %}
+            {% if claim.proof_image_url %}
+            <div>
               <div class="detail-label">Foto Bukti</div>
               <a href="{{ claim.proof_image_url }}" target="_blank">
-                <img src="{{ claim.proof_image_url }}" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border-light); margin-top: 5px;">
+                <img src="{{ claim.proof_image_url }}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-top: 5px; border: 1px solid var(--border-light);">
               </a>
-              {% endif %}
-            </div>
-
-            {% if claim.status == 'PENDING' %}
-            <div class="claim-actions">
-              <form action="/admin/claims/{{ claim.id }}/process" method="POST" style="flex:1;">
-                <input type="hidden" name="action" value="approve">
-                <button type="submit" class="btn btn-approve" style="width:100%;">Approve</button>
-              </form>
-              <form action="/admin/claims/{{ claim.id }}/process" method="POST" style="flex:1;">
-                <input type="hidden" name="action" value="reject">
-                <button type="submit" class="btn btn-reject" style="width:100%;">Reject</button>
-              </form>
             </div>
             {% endif %}
+
+            <div class="actions">
+              <button type="button" class="btn btn-verify" onclick="openRFIDModal({{ claim.id }})">Verifikasi & Tap</button>
+              
+              <form action="/admin/claims/{{ claim.id }}/process" method="POST" style="flex: 1; display:flex;">
+                <input type="hidden" name="action" value="reject">
+                <button type="submit" class="btn btn-reject" style="width:100%;">Tolak</button>
+              </form>
+            </div>
           </div>
           {% endfor %}
         {% else %}
-          <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-muted);">
-            Belum ada permintaan klaim yang masuk.
+          <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--text-muted); background:var(--surface); border:1px solid var(--border-light); border-radius:16px;">
+            Belum ada pengajuan klaim baru yang masuk.
           </div>
         {% endif %}
       </div>
     </div>
   </main>
 </div>
+
+<div class="modal-overlay" id="rfidModal">
+  <div class="modal-card">
+    <div class="rfid-icon">🪪</div>
+    <h2 style="margin-bottom: 0.5rem;">Tap Kartu Pelajar</h2>
+    <p style="font-size: 0.9rem; color: var(--text-muted);">Silakan tempelkan kartu RFID pada scanner untuk menyerahkan barang.</p>
+    
+    <form id="rfidForm" method="POST" action="">
+      <input type="hidden" name="action" value="approve">
+      <input type="text" name="rfid_uid" id="rfidInput" class="rfid-input" placeholder="Menunggu scan..." required autocomplete="off">
+    </form>
+    
+    <button type="button" onclick="closeRFIDModal()" style="margin-top: 1rem; background: none; border: none; color: var(--text-muted); text-decoration: underline; cursor: pointer; font-family: inherit;">Batalkan</button>
+  </div>
+</div>
+
+<script>
+  const modal = document.getElementById('rfidModal');
+  const form = document.getElementById('rfidForm');
+  const input = document.getElementById('rfidInput');
+
+  function openRFIDModal(claimId) {
+    form.action = `/admin/claims/${claimId}/process`;
+    modal.classList.add('show');
+    modal.style.display = 'flex';
+    input.value = ''; 
+    setTimeout(() => input.focus(), 100);
+  }
+
+  function closeRFIDModal() {
+    modal.style.display = 'none';
+  }
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeRFIDModal();
+  });
+
+  modal.addEventListener('click', () => {
+    if (modal.style.display === 'flex') input.focus();
+  });
+</script>
 </body>
 </html>

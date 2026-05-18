@@ -241,80 +241,78 @@ async def update_status(
 
 @router.get("/claims")
 async def list_claims(request: Request, db: Session = Depends(get_db)):
-    admin = get_admin_or_redirect(request, db)
-    if not admin: return RedirectResponse("/admin/login")
+    admin_id = request.session.get("admin_id")
+    if not admin_id:
+        return RedirectResponse("/admin/login", status_code=303)
 
-    claims = db.query(ClaimRequest).order_by(ClaimRequest.created_at.desc()).all()
-    for c in claims:
-        c.item = db.query(Item).filter(Item.id == c.item_id).first()
+    admin = db.query(Admin).filter(Admin.id == admin_id).first()
 
-    return templates.TemplateResponse("admin/claims_list.html", {"request": request, "claims": claims, "admin": admin})
+    # FIX 1: Tambahkan filter PENDING agar yang sudah diapprove/direject hilang
+    # FIX 2: Gunakan JOIN dengan tabel Item untuk fitur Preview Barang
+    claims_data = (
+        db.query(ClaimRequest, Item)
+        .join(Item, ClaimRequest.item_id == Item.id)
+        .filter(ClaimRequest.status == "PENDING")
+        .order_by(ClaimRequest.created_at.desc())
+        .all()
+    )
+
+    return templates.TemplateResponse("admin/claims_list.html", {
+        "request": request, 
+        "admin": admin, 
+        "claims_data": claims_data 
+    })
 
 
 @router.post("/claims/{claim_id}/process")
-async def process_claim(
-    request: Request,
-    claim_id: int,
-    action: str = Form(...),
-    rfid_uid: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
-):
-    # Cek login admin sederhana
-    if not request.session.get("admin_id"):
-        return RedirectResponse("/admin/login", status_code=303)
-
+async def process_claim(claim_id: int, action: str = Form(...), db: Session = Depends(get_db)):
     claim = db.query(ClaimRequest).filter(ClaimRequest.id == claim_id).first()
-    if not claim:
-        raise HTTPException(status_code=404, detail="Klaim tidak ditemukan")
-
-    item = db.query(Item).filter(Item.id == claim.item_id).first()
-
-    if action == "approve":
-        if not rfid_uid:
-            raise HTTPException(status_code=400, detail="RFID wajib diisi untuk verifikasi pengambilan!")
-        
-        claim.status = "APPROVED"
-        claim.rfid_uid = rfid_uid
-        if item:
-            item.status = "CLAIMED"
-            
-    elif action == "reject":
-        # Jika ditolak, hapus foto buktinya (jika ada) biar gak menuhin server
-        if claim.proof_image_url:
-            old_path = claim.proof_image_url.lstrip("/")
-            if os.path.exists(old_path):
-                os.remove(old_path)
-        db.delete(claim)
-        
-    db.commit()
+    if claim:
+        claim.status = "APPROVED" if action == "approve" else "REJECTED"
+        if action == "approve":
+            item = db.query(Item).filter(Item.id == claim.item_id).first()
+            if item: item.status = "CLAIMED"
+        db.commit()
     return RedirectResponse("/admin/claims", status_code=303)
 
 
-@router.get("/review")
+# --- REVIEW LAPORAN PUBLIK ---
+
+@router.get("/reviews")
 async def review_list(request: Request, db: Session = Depends(get_db)):
-    admin = get_admin_or_redirect(request, db)
-    if not Admin: return RedirectResponse("/admin/login")
+    admin_id = request.session.get("admin_id")
+    if not admin_id:
+        return RedirectResponse("/admin/login", status_code=303)
 
+    # Ambil admin untuk nampilin nama di topbar (kalau ada)
+    admin = db.query(Admin).filter(Admin.id == admin_id).first()
+
+    # Ambil semua item yang belum di-approve
     pending_items = db.query(Item).filter(Item.is_approved == False).order_by(Item.created_at.desc()).all()
-    return templates.TemplateResponse("admin/review_list.html", {"request": request, "admin": admin, "items": pending_items})
-
+    
+    return templates.TemplateResponse("admin/review_list.html", {
+        "request": request, 
+        "admin": admin, 
+        "items": pending_items
+    })
 
 @router.post("/reviews/{item_id}/process")
-async def process_review(item_id: int, action: str = Form(...), db: Session = Depends(get_db)):
-    admin = get_admin_or_redirect(request=Request, db=db) 
-    
+async def process_review(request: Request, item_id: int, action: str = Form(...), db: Session = Depends(get_db)):
+    if not request.session.get("admin_id"):
+        return RedirectResponse("/admin/login", status_code=303)
+        
     item = db.query(Item).filter(Item.id == item_id, Item.is_approved == False).first()
     if item:
         if action == "approve":
             item.is_approved = True
-            db.commit()
         elif action == "reject":
             # Hapus file foto jika ditolak
             if item.image_url:
                 old_path = item.image_url.lstrip("/")
                 if os.path.exists(old_path):
+                    import os
                     os.remove(old_path)
             db.delete(item)
-            db.commit()
+        db.commit()
             
     return RedirectResponse("/admin/reviews", status_code=303)
