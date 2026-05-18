@@ -26,7 +26,6 @@ def get_admin_or_redirect(request: Request, db: Session):
     return admin
 
 
-# ── Login ──────────────────────────────────────────────────────────────────────
 
 @router.get("/login")
 async def login_page(request: Request):
@@ -138,8 +137,6 @@ async def create_item(
     return RedirectResponse("/admin/dashboard", status_code=302)
 
 
-# ── Edit Item ──────────────────────────────────────────────────────────────────
-
 @router.get("/items/{item_id}/edit")
 async def edit_item_page(request: Request, item_id: int, db: Session = Depends(get_db)):
     admin = get_admin_or_redirect(request, db)
@@ -222,8 +219,6 @@ async def delete_item(request: Request, item_id: int, db: Session = Depends(get_
     return RedirectResponse("/admin/dashboard", status_code=302)
 
 
-# ── Quick Status Update ────────────────────────────────────────────────────────
-
 @router.post("/items/{item_id}/status")
 async def update_status(
     request: Request,
@@ -249,21 +244,77 @@ async def list_claims(request: Request, db: Session = Depends(get_db)):
     admin = get_admin_or_redirect(request, db)
     if not admin: return RedirectResponse("/admin/login")
 
-    # Ambil klaim dan join dengan data barang untuk tahu barang mana yang diklaim
     claims = db.query(ClaimRequest).order_by(ClaimRequest.created_at.desc()).all()
-    # Note: Untuk performa lebih baik, idealnya pakai join SQL, tapi ini cukup untuk awal
     for c in claims:
         c.item = db.query(Item).filter(Item.id == c.item_id).first()
 
     return templates.TemplateResponse("admin/claims_list.html", {"request": request, "claims": claims, "admin": admin})
 
+
 @router.post("/claims/{claim_id}/process")
-async def process_claim(claim_id: int, action: str = Form(...), db: Session = Depends(get_db)):
+async def process_claim(
+    request: Request,
+    claim_id: int,
+    action: str = Form(...),
+    rfid_uid: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
+):
+    # Cek login admin sederhana
+    if not request.session.get("admin_id"):
+        return RedirectResponse("/admin/login", status_code=303)
+
     claim = db.query(ClaimRequest).filter(ClaimRequest.id == claim_id).first()
-    if claim:
-        claim.status = "APPROVED" if action == "approve" else "REJECTED"
-        if action == "approve":
-            item = db.query(Item).filter(Item.id == claim.item_id).first()
-            if item: item.status = "CLAIMED" # Otomatis set barang jadi diklaim
-        db.commit()
+    if not claim:
+        raise HTTPException(status_code=404, detail="Klaim tidak ditemukan")
+
+    item = db.query(Item).filter(Item.id == claim.item_id).first()
+
+    if action == "approve":
+        if not rfid_uid:
+            raise HTTPException(status_code=400, detail="RFID wajib diisi untuk verifikasi pengambilan!")
+        
+        claim.status = "APPROVED"
+        claim.rfid_uid = rfid_uid
+        if item:
+            item.status = "CLAIMED"
+            
+    elif action == "reject":
+        # Jika ditolak, hapus foto buktinya (jika ada) biar gak menuhin server
+        if claim.proof_image_url:
+            old_path = claim.proof_image_url.lstrip("/")
+            if os.path.exists(old_path):
+                os.remove(old_path)
+        db.delete(claim)
+        
+    db.commit()
     return RedirectResponse("/admin/claims", status_code=303)
+
+
+@router.get("/review")
+async def review_list(request: Request, db: Session = Depends(get_db)):
+    admin = get_admin_or_redirect(request, db)
+    if not Admin: return RedirectResponse("/admin/login")
+
+    pending_items = db.query(Item).filter(Item.is_approved == False).order_by(Item.created_at.desc()).all()
+    return templates.TemplateResponse("admin/review_list.html", {"request": request, "admin": admin, "items": pending_items})
+
+
+@router.post("/reviews/{item_id}/process")
+async def process_review(item_id: int, action: str = Form(...), db: Session = Depends(get_db)):
+    admin = get_admin_or_redirect(request=Request, db=db) 
+    
+    item = db.query(Item).filter(Item.id == item_id, Item.is_approved == False).first()
+    if item:
+        if action == "approve":
+            item.is_approved = True
+            db.commit()
+        elif action == "reject":
+            # Hapus file foto jika ditolak
+            if item.image_url:
+                old_path = item.image_url.lstrip("/")
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            db.delete(item)
+            db.commit()
+            
+    return RedirectResponse("/admin/reviews", status_code=303)

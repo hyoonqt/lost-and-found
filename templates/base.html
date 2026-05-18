@@ -71,6 +71,8 @@
     </a>
     <div class="navbar-links">
       <a href="/">Koleksi</a>
+      <a href="/report" style="color: var(--primary); font-weight: 600;">+ Lapor Barang</a>
+      
       {% if request.session.get('admin_id') %}
         <a href="/admin/dashboard" style="background: var(--primary); color: white; padding: 0.4rem 1rem; border-radius: 8px;">Dashboard</a>
       {% endif %}

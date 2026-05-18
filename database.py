@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 
@@ -22,6 +22,8 @@ class Item(Base):
     location     = Column(String(300), nullable=True)
     image_url    = Column(String(500), nullable=True)
     reporter_name = Column(String(200), nullable=True)
+    reporter_contact = Column(String(50), nullable=True)
+    is_approved = Column(Boolean, default=True)
     created_at   = Column(DateTime, default=datetime.utcnow)
     updated_at   = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -46,6 +48,7 @@ class ClaimRequest(Base):
     proof_description = Column(Text, nullable=False)
     proof_image_url = Column(String(500), nullable=True)
     status           = Column(String(20), default="PENDING") # PENDING, APPROVED, REJECTED
+    rfid_uid         = Column(String(100), nullable=True)
     created_at       = Column(DateTime, default=datetime.utcnow)
 
 

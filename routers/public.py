@@ -4,9 +4,11 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from database import get_db, Item, ClaimRequest
 from typing import Optional
+from utils import generate_item_code
 import os
 import uuid
 import aiofiles
+
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -24,7 +26,7 @@ async def home(
     status: Optional[str] = None,
     q: Optional[str] = None,
 ):
-    query = db.query(Item)
+    query = db.query(Item).filter(Item.is_approved == True)
 
     if status and status in ["LOST", "FOUND", "CLAIMED"]:
         query = query.filter(Item.status == status)
@@ -64,7 +66,7 @@ async def home(
 
 @router.get("/item/{code}")
 async def item_detail(request: Request, code: str, db: Session = Depends(get_db)):
-    item = db.query(Item).filter(Item.code == code).first()
+    item = db.query(Item).filter(Item.code == code, Item.is_approved == True).first()
     if not item:
         return templates.TemplateResponse(
             "404.html", {"request": request}, status_code=404
@@ -129,7 +131,53 @@ async def submit_claim(
         proof_description=proof,
         proof_image_url=image_url
     )
+
     db.add(new_claim)
     db.commit()
     
     return RedirectResponse(url=f"/item/{code}?success=true", status_code=303)
+
+
+@router.get("/report")
+async def report_page(request: Request):
+    return templates.TemplateResponse("public_report.html", {"request": request, "school_name": SCHOOL_NAME})
+    
+    
+@router.post("/report")
+async def submit_report(
+        request: Request,
+        title: str = Form(...),
+        description: str = Form(""),
+        status: str = Form(...),
+        location: str = Form(""),
+        reporter_name: str = Form(...),
+        reporter_contact: str = Form(...),
+        image: Optional[UploadFile] = File(None),
+        db: Session = Depends(get_db)
+    ):
+        image_url = None
+        if image and image.filename:
+            if not image.content_type.startswith("image/"):
+                raise HTTPException(status_code=400, detail="File harus gambar")
+            
+            ext = os.path.splitext(image.filename)[1].lower()
+            if ext not in [".jpg", ".jpeg", ".png", ".webp"]: ext = ".jpg"
+            filename = f"public_{uuid.uuid4().hex}{ext}"
+            filepath = os.path.join(UPLOAD_DIR, filename)
+
+            async with aiofiles.open(filepath, "wb") as f:
+                content = await image.read()
+                await f.write(content)
+            image_url = f"/uploads/images/{filename}"
+        
+        code = generate_item_code(db)
+        new_item = Item(
+            code=code, title=title, description=description, status=status,
+            location=location, reporter_name=reporter_name, reporter_contact=reporter_contact,
+            image_url=image_url,
+            is_approved=False
+        )
+
+        db.add(new_item)
+        db.commit()
+        return RedirectResponse("/?succes=reported", status_code=303)

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Review Laporan — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Gunakan CSS layout standar admin yang sama dengan dashboard.html */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --primary: #0066FF; --surface: #ffffff; --text-dark: #1e293b; --text-muted: #64748b; --border-light: #f1f5f9; --sidebar-width: 240px; }
+    body { font-family: 'Inter', sans-serif; background: #fafafc; color: var(--text-dark); display: flex; min-height: 100vh; }
+    .sidebar { width: var(--sidebar-width); background: var(--surface); border-right: 1px solid var(--border-light); padding: 1.5rem 1rem; display: flex; flex-direction: column; }
+    .nav-item { display: block; padding: 0.75rem 1rem; color: var(--text-muted); text-decoration: none; border-radius: 12px; margin-bottom: 5px; font-weight: 500; }
+    .nav-item.active { background: var(--primary); color: white; }
+    .main-content { flex: 1; padding: 2rem; overflow-y: auto; }
+    
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+    .card { background: white; border: 1px solid var(--border-light); border-radius: 16px; padding: 1.5rem; }
+    .card-header { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+    .badge { padding: 4px 8px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; }
+    .badge-found { background: #dcfce7; color: #16a34a; }
+    .badge-lost { background: #ffe4e6; color: #e11d48; }
+    
+    .meta { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .meta strong { color: var(--text-dark); }
+    
+    .actions { display: flex; gap: 10px; margin-top: 1.5rem; }
+    .btn { flex: 1; padding: 0.75rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; color: white; }
+    .btn-approve { background: #16a34a; }
+    .btn-reject { background: #e11d48; }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <h2 style="margin-bottom: 2rem; padding: 0 1rem; font-size: 1.2rem;">L&F Admin</h2>
+    <a href="/admin/dashboard" class="nav-item">Dashboard</a>
+    <a href="/admin/items/new" class="nav-item">Tambah Barang</a>
+    <a href="/admin/claims" class="nav-item">Daftar Klaim</a>
+    <a href="/admin/reviews" class="nav-item active">Review Publik</a>
+  </aside>
+
+  <main class="main-content">
+    <h1>Antrean Review Publik</h1>
+    <p style="color: var(--text-muted);">Laporan dari publik yang menunggu persetujuan sebelum tampil di website.</p>
+
+    <div class="grid">
+      {% if items %}
+        {% for item in items %}
+        <div class="card">
+          <div class="card-header">
+            <h3 style="font-size: 1.1rem;">{{ item.title }}</h3>
+            <span class="badge badge-{{ item.status.lower() }}">{{ item.status }}</span>
+          </div>
+          
+          {% if item.image_url %}
+            <img src="{{ item.image_url }}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">
+          {% endif %}
+
+          <div class="meta"><strong>Pelapor:</strong> {{ item.reporter_name }}</div>
+          <div class="meta"><strong>Kontak WA:</strong> {{ item.reporter_contact }}</div>
+          <div class="meta"><strong>Lokasi:</strong> {{ item.location }}</div>
+          <div class="meta"><strong>Deskripsi:</strong> {{ item.description }}</div>
+
+          <div class="actions">
+            <form action="/admin/reviews/{{ item.id }}/process" method="POST" style="flex: 1;">
+              <input type="hidden" name="action" value="approve">
+              <button type="submit" class="btn btn-approve" style="width: 100%;">Setujui</button>
+            </form>
+            <form action="/admin/reviews/{{ item.id }}/process" method="POST" style="flex: 1;">
+              <input type="hidden" name="action" value="reject">
+              <button type="submit" class="btn btn-reject" style="width: 100%;">Tolak</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);">
+          Tidak ada laporan yang menunggu review.
+        </div>
+      {% endif %}
+    </div>
+  </main>
+</body>
+</html>

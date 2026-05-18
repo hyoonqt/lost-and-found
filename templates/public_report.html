@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Lapor Barang — {{ school_name }}{% endblock %}
+
+{% block head %}
+<style>
+  .report-wrap { max-width: 700px; margin: 3rem auto; padding: 0 1.5rem; }
+  .report-header { text-align: center; margin-bottom: 2.5rem; }
+  .report-header h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--text-dark, #1e293b); }
+  .report-header p { color: var(--text-muted, #64748b); font-size: 0.95rem; }
+
+  .report-card { background: var(--surface, #ffffff); border: 1px solid var(--border-light, #e2e8f0); border-radius: 16px; padding: 2.5rem; box-shadow: 0 10px 40px rgba(0,0,0,0.02); }
+  
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  .form-full { grid-column: 1 / -1; }
+  .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+  .form-label { font-size: 0.85rem; font-weight: 600; color: var(--text-dark, #1e293b); }
+  
+  .form-control { padding: 0.75rem 1rem; border: 1px solid var(--border-light, #cbd5e1); border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: #f8fafc; outline: none; transition: all 0.2s; color: var(--text-dark, #0f172a); }
+  .form-control:focus { border-color: var(--primary, #0f172a); background: #ffffff; }
+  
+  .status-group { display: flex; gap: 10px; }
+  .status-radio { display: none; }
+  .status-option { flex: 1; text-align: center; padding: 0.75rem; border: 1px solid var(--border-light, #cbd5e1); border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; color: var(--text-muted, #64748b); transition: all 0.2s; background: #ffffff; }
+  .status-radio:checked + .status-option { background: var(--primary, #0f172a); color: #ffffff; border-color: var(--primary, #0f172a); }
+
+  .btn-submit { width: 100%; padding: 1rem; background: var(--primary, #0f172a); color: #ffffff; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 1.5rem; transition: opacity 0.2s; }
+  .btn-submit:hover { opacity: 0.8; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-wrap">
+  <div class="report-header">
+    <h1>Lapor Barang</h1>
+    <p>Bantu kembalikan barang temuan, atau laporkan barang Anda yang hilang. Laporan akan ditinjau oleh Admin sebelum dipublikasikan.</p>
+  </div>
+
+  <div class="report-card">
+    <form method="POST" action="/report" enctype="multipart/form-data">
+      <div class="form-grid">
+        <div class="form-group form-full">
+          <label class="form-label">Status Laporan *</label>
+          <div class="status-group">
+            <input class="status-radio" type="radio" id="s-found" name="status" value="FOUND" checked>
+            <label class="status-option" for="s-found">Saya Menemukan Barang</label>
+
+            <input class="status-radio" type="radio" id="s-lost" name="status" value="LOST">
+            <label class="status-option" for="s-lost">Saya Kehilangan Barang</label>
+          </div>
+        </div>
+
+        <div class="form-group form-full">
+          <label class="form-label">Nama Barang *</label>
+          <input class="form-control" type="text" name="title" placeholder="Contoh: Kotak Pensil Joyko" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Lokasi *</label>
+          <input class="form-control" type="text" name="location" placeholder="Kantin, Lab Komputer..." required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Foto Barang (Opsional)</label>
+          <input class="form-control" type="file" name="image" accept="image/*" style="padding: 0.6rem;">
+        </div>
+
+        <div class="form-group form-full">
+          <label class="form-label">Ciri Khusus / Deskripsi</label>
+          <textarea class="form-control" name="description" rows="3" placeholder="Warna, isi, merk, dll..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nama Anda *</label>
+          <input class="form-control" type="text" name="reporter_name" placeholder="Nama Lengkap" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">No. WhatsApp *</label>
+          <input class="form-control" type="text" name="reporter_contact" placeholder="0812xxxxxx" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit">Kirim Laporan</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

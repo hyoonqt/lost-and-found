@@ -119,6 +119,14 @@
         <p class="page-sub">{{ 'Perbarui informasi untuk barang ini.' if item else 'Isi formulir untuk mendaftarkan barang hilang atau temuan.' }}</p>
       </div>
 
+      <div class="code-preview">
+        <div>
+          <div class="code-preview-label">Kode Barang</div>
+          <div class="code-preview-value">{{ preview_code }}</div>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Dihasilkan Otomatis</div>
+      </div>
+
       <div class="form-card">
         <form method="POST" action="{{ '/admin/items/' + item.id|string + '/edit' if item else '/admin/items/new' }}" enctype="multipart/form-data">
 

@@ -112,16 +112,21 @@
       <div class="meta-grid">
         {% if item.location %}
         <div class="meta-item">
-          <span class="meta-label">Lokasi</span>
+          <span class="meta-label">
+            {% if item.status == 'LOST' %}Lokasi Hilang
+            {% else %}Lokasi Ditemukan{% endif %}
+          </span>
           <span class="meta-value">{{ item.location }}</span>
         </div>
         {% endif %}
+        
         {% if item.reporter_name %}
         <div class="meta-item">
           <span class="meta-label">Dilaporkan Oleh</span>
           <span class="meta-value">{{ item.reporter_name }}</span>
         </div>
         {% endif %}
+        
         <div class="meta-item">
           <span class="meta-label">Tanggal Lapor</span>
           <span class="meta-value">{{ item.created_at.strftime('%d %b %Y') if item.created_at else '—' }}</span>
@@ -188,8 +193,20 @@
           if (e.target === this) closeModal();
         });
       </script>
+      
+      {% elif item.status == 'LOST' %}
+      <div class="action-box" style="background: #fff1f2; border-color: #ffe4e6; text-align: center;">
+        <h3 style="color: #e11d48;">Anda Menemukan Barang Ini?</h3>
+        <p style="color: #be123c;">Bantu kembalikan barang ini. Harap hubungi kontak pelapor di bawah ini.</p>
+        
+        {% set contact = item.reporter_contact if item.reporter_contact else whatsapp_number %}
+        
+        <a href="https://wa.me/{{ contact|replace('08', '628') }}" target="_blank" class="btn-wa" style="background: #e11d48; display: inline-block; width: 100%; text-decoration: none; margin-top: 10px;">
+          <span>💬</span> Hubungi Pelapor
+        </a>
+      </div>
       {% endif %}
-    </div>
+      </div>
   </div>
 </div>
 {% endblock %}
