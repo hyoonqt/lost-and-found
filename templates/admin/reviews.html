@@ -1,0 +1,96 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Review Laporan — Admin{% endblock %}
+
+{% block custom_style %}
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+  .card { background: white; border: 1px solid var(--border-light); border-radius: 16px; padding: 1.5rem; transition: box-shadow 0.2s; display: flex; flex-direction: column;}
+  .card-header { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+  .badge { padding: 4px 8px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; }
+  .badge-found { background: #dcfce7; color: #16a34a; }
+  .badge-lost { background: #ffe4e6; color: #e11d48; }
+  .meta { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+  .meta strong { color: var(--text-dark); }
+  .actions { display: flex; gap: 10px; margin-top: auto; padding-top: 1.5rem; }
+  
+  /* Tombol Aksi (Ghost Button) */
+  .btn { 
+    flex: 1; padding: 0.6rem 1.2rem; border: none; border-radius: 10px; 
+    font-size: 0.85rem; font-weight: 600; cursor: pointer; 
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; 
+    transition: all 0.2s ease; background: white; 
+  }
+  .btn-approve { color: var(--primary); border: 1.5px solid #bfdbfe; }
+  .btn-approve:hover { border-color: var(--primary); background: #eff6ff; }
+  .btn-reject { color: #e11d48; border: 1.5px solid #fecdd3; }
+  .btn-reject:hover { border-color: #e11d48; background: #fff1f2; }
+
+  /* Tombol WhatsApp */
+  .btn-wa { 
+    background: #f0fdf4; color: #16a34a; border: 1.5px solid #dcfce7; 
+    display: flex; align-items: center; justify-content: center; gap: 6px; 
+    padding: 0.5rem 0.8rem; border-radius: 8px; font-size: 0.85rem; 
+    font-weight: 600; text-decoration: none; margin-bottom: 1rem; transition: all 0.2s; 
+  }
+  .btn-wa:hover { background: #16a34a; color: white; border-color: #16a34a; }
+{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">Antrean Review Publik</h1>
+  <p class="page-sub">Laporan dari publik yang menunggu persetujuan sebelum tampil di website.</p>
+
+  <div class="grid">
+    {% if items %}
+      {% for item in items %}
+      <div class="card">
+        <div class="card-header">
+          <a href="/admin/item/{{ item.id }}" style="text-decoration: none; color: var(--primary); font-size: 1.1rem; font-weight: 700;">{{ item.title }}</a>
+          <span class="badge badge-{{ item.status.lower() }}">{{ item.status }}</span>
+        </div>
+        
+        {% if item.image_url %}
+          <img src="{{ item.image_url }}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border-light);">
+        {% endif %}
+        
+        <div class="meta"><strong>Pelapor:</strong> {{ item.reporter_name }}</div>
+        <div class="meta"><strong>Kontak WA:</strong> {{ item.reporter_contact }}</div>
+        <div class="meta"><strong>Lokasi:</strong> {{ item.location }}</div>
+        <div class="meta" style="background: #f1f5f9; padding: 10px; border-radius: 8px; margin-top: 10px; margin-bottom: 10px;"><strong>Deskripsi:</strong> "{{ item.description }}"</div>
+        
+        {% if item.reporter_contact and item.reporter_contact != '-' %}
+          {% set wa_num = item.reporter_contact | replace('08', '628', 1) %}
+          <a href="https://wa.me/{{ wa_num }}?text=Halo%20{{ item.reporter_name }},%20saya%20admin%20Lost%20and%20Found.%20Tolong%20bawa%20barang%20*{{ item.title }}*%20ke%20ruang%20TU%20sekarang%20agar%20laporannya%20bisa%20disetujui." target="_blank" class="btn-wa">
+            <i class="ph-fill ph-whatsapp-logo" style="font-size: 1rem;"></i> Hubungi Pelapor
+          </a>
+        {% endif %}
+
+        <div class="actions">
+          <form action="/admin/reviews/{{ item.id }}/process" method="POST" style="flex: 1; display:flex;">
+            <input type="hidden" name="action" value="approve">
+            <button type="submit" class="btn btn-approve" style="width: 100%;"><i class="ph ph-check"></i> Setujui</button>
+          </form>
+          <form action="/admin/reviews/{{ item.id }}/process" method="POST" style="flex: 1; display:flex;">
+            <input type="hidden" name="action" value="reject">
+            <button type="submit" class="btn btn-reject" style="width: 100%;"><i class="ph ph-x"></i> Tolak</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--text-muted); background:var(--surface); border:1px solid var(--border-light); border-radius:16px;">
+        <i class="ph ph-checks" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i><br>
+        Tidak ada laporan yang menunggu review.
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('success')) {
+    showToast("Laporan publik berhasil ditinjau!", "success");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+</script>
+{% endblock %}

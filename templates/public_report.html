@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Lapor Barang{% endblock %}
+
+{% block head %}
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  .report-wrap { max-width: 700px; margin: 3rem auto; padding: 0 1.5rem; }
+  .report-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 2.5rem; box-shadow: 0 10px 40px rgba(0,0,0,0.02); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .form-full { grid-column: 1 / -1; }
+  .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+  .form-label { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
+  .form-control { width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; background: #f8fafc; outline: none; }
+  .form-control:focus { border-color: #0066FF; background: #ffffff; }
+  .status-group { display: flex; gap: 10px; }
+  .status-radio { display: none; }
+  .status-option { flex: 1; text-align: center; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; color: #64748b; background: #ffffff; }
+  .status-radio:checked + .status-option { background: #0066FF; color: #ffffff; border-color: #0066FF; }
+  .btn-submit { width: 100%; padding: 1rem; background: #0066FF; color: #ffffff; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 1.5rem; }
+  .btn-cam { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  #webcam-container { display: none; margin-top: 0.5rem; background: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; }
+  #webcam-video { width: 100%; max-width: 400px; border-radius: 8px; background: #000; margin: 0 auto 1rem; display: block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-wrap">
+  <div class="report-card">
+    <h1 style="font-size: 1.8rem; font-weight:700; margin-bottom: 1.5rem; text-align:center;">Formulir Lapor Barang</h1>
+    <form method="POST" action="/report" enctype="multipart/form-data">
+      <div class="form-grid">
+        <div class="form-group form-full">
+          <label class="form-label">Status Laporan *</label>
+          <div class="status-group">
+            <input class="status-radio" type="radio" id="s-found" name="status" value="FOUND" checked>
+            <label class="status-option" for="s-found">Saya Menemukan Barang</label>
+            <input class="status-radio" type="radio" id="s-lost" name="status" value="LOST">
+            <label class="status-option" for="s-lost">Saya Kehilangan Barang</label>
+          </div>
+        </div>
+
+        <div class="form-group form-full">
+          <label class="form-label">Nama Barang *</label>
+          <input class="form-control" type="text" name="title" placeholder="Contoh: Kunci Motor Honda" required>
+        </div>
+
+        <div class="form-group form-full">
+          <label class="form-label">Lokasi Temuan/Kehilangan *</label>
+          <input class="form-control" type="text" name="location" placeholder="Lab RPL, Masjid, Kantin..." required>
+        </div>
+
+        <div class="form-group form-full">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label class="form-label">Foto Barang</label>
+            <button type="button" id="btn-open-cam" class="btn-cam"><i class="ph ph-camera"></i> Gunakan Kamera</button>
+          </div>
+          <input class="form-control" type="file" name="image" id="imageInput" accept="image/*" style="padding: 0.5rem;">
+          <img id="previewImg" style="display: none; max-height: 120px; margin-top: 10px; border-radius: 8px; object-fit: cover;" />
+          
+          <div id="webcam-container">
+            <video id="webcam-video" autoplay playsinline></video>
+            <canvas id="webcam-canvas" style="display:none;"></canvas>
+            <div style="display: flex; justify-content: center; gap: 10px;">
+              <button type="button" id="btn-capture" style="padding: 0.5rem 1rem; background: #0066FF; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="ph ph-aperture"></i> Ambil Foto</button>
+              <button type="button" id="btn-close-cam" style="padding: 0.5rem 1rem; background: #e2e8f0; border: none; border-radius: 6px; cursor: pointer;">Batal</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group form-full">
+          <label class="form-label">Deskripsi / Ciri Khusus</label>
+          <textarea class="form-control" name="description" rows="3" placeholder="Gantungan kunci warna merah, casing lecet..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nama Anda *</label>
+          <input class="form-control" type="text" name="reporter_name" placeholder="Nama Lengkap" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">No. WhatsApp *</label>
+          <input 
+            class="form-control" 
+            type="tel" 
+            name="reporter_contact" 
+            placeholder="0812xxxxxx" 
+            pattern="^(08|628)[0-9]{8,11}$" 
+            title="Format harus angka, diawali 08 atau 628, minimal 10 digit maksimal 13 digit." 
+            required 
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+          >
+        </div>
+      </div>
+      <button type="submit" class="btn-submit">Kirim Laporan</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  const input = document.getElementById('imageInput');
+  const previewImg = document.getElementById('previewImg');
+  const video = document.getElementById('webcam-video');
+  const canvas = document.getElementById('webcam-canvas');
+  let stream = null;
+
+  input.addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => { previewImg.src = e.target.result; previewImg.style.display = 'block'; };
+      reader.readAsDataURL(this.files[0]);
+    }
+  });
+
+  document.getElementById('btn-open-cam').addEventListener('click', async () => {
+    document.getElementById('webcam-container').style.display = 'block';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      video.srcObject = stream;
+    } catch (err) { alert("Kamera tidak diizinkan atau tidak ditemukan."); }
+  });
+
+  document.getElementById('btn-close-cam').addEventListener('click', () => {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    document.getElementById('webcam-container').style.display = 'none';
+  });
+
+  document.getElementById('btn-capture').addEventListener('click', () => {
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      const file = new File([blob], "capture_" + Date.now() + ".jpg", { type: "image/jpeg" });
+      const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+      input.dispatchEvent(new Event('change'));
+      document.getElementById('btn-close-cam').click();
+    }, 'image/jpeg', 0.9);
+  });
+</script>
+{% endblock %}

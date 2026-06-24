@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ 'Edit' if item else 'Tambah' }} Barang — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #0066FF; --primary-hover: #0052cc;
+      --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #fae8ff 100%);
+      --surface: #ffffff; --text-dark: #1e293b; --text-muted: #64748b;
+      --border-light: #f1f5f9; --sidebar-width: 240px;
+    }
+    body {
+      font-family: 'Inter', sans-serif; background: var(--bg-gradient);
+      color: var(--text-dark); min-height: 100vh; padding: 1rem; display: flex;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Layout Utama (Disamakan dengan Dashboard) */
+    .app-container {
+      display: flex; width: 100%; background: var(--surface);
+      border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); overflow: hidden;
+    }
+    .sidebar { width: var(--sidebar-width); border-right: 1px solid var(--border-light); display: flex; flex-direction: column; padding: 1.5rem 1rem; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0.5rem; margin-bottom: 2rem; }
+    .sidebar-logo-icon { background: var(--primary); color: #fff; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; }
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 0.75rem 1rem; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; text-decoration: none; border-radius: 12px; transition: all 0.2s; }
+    .nav-item:hover { background: var(--border-light); color: var(--text-dark); }
+    .nav-item.active { background: var(--primary); color: white; }
+
+    .main-content { flex: 1; display: flex; flex-direction: column; background: #fafafc; }
+    .topbar { padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; background: var(--surface); border-bottom: 1px solid var(--border-light); }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; margin-left: auto; }
+    .user-profile { display: flex; align-items: center; gap: 10px; background: var(--border-light); padding: 0.4rem 0.8rem; border-radius: 20px; }
+    .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; }
+
+    /* Area Konten Form */
+    .content-body { padding: 2rem 3rem; flex: 1; overflow-y: auto; }
+    .page-header { margin-bottom: 2rem; }
+    .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .page-sub { font-size: 0.9rem; color: var(--text-muted); }
+
+    .code-preview { background: var(--surface); border: 1px solid var(--primary); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; max-width: 800px; }
+    .code-preview-label { font-size: 0.75rem; font-weight: 600; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+    .code-preview-value { font-family: monospace; font-size: 1.5rem; font-weight: 700; }
+
+    .form-card { background: var(--surface); border: 1px solid var(--border-light); border-radius: 20px; padding: 2rem; max-width: 800px; }
+    .form-section-title { font-size: 0.85rem; font-weight: 600; color: var(--text-dark); margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; }
+    
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    .form-full { grid-column: 1 / -1; }
+    
+    .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .form-label { font-size: 0.8rem; font-weight: 500; color: var(--text-dark); }
+    .form-control { padding: 0.75rem 1rem; border: 1px solid var(--border-light); border-radius: 12px; font-family: inherit; font-size: 0.9rem; background: #f8fafc; outline: none; transition: all 0.2s; }
+    .form-control:focus { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 3px rgba(0,102,255,0.1); }
+    textarea.form-control { resize: vertical; min-height: 100px; }
+
+    .status-group { display: flex; gap: 10px; flex-wrap: wrap; }
+    .status-radio { display: none; }
+    .status-option { padding: 0.5rem 1.2rem; border: 1px solid var(--border-light); border-radius: 20px; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.2s; color: var(--text-muted); background: var(--surface); }
+    .status-radio:checked + .status-option { background: var(--primary); color: white; border-color: var(--primary); }
+    
+    .upload-zone { border: 2px dashed var(--border-light); border-radius: 16px; background: #f8fafc; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+    .upload-zone:hover, .upload-zone.over { border-color: var(--primary); background: #f0f7ff; }
+    .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; z-index: 10; }
+    .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .upload-label { font-size: 0.9rem; font-weight: 500; color: var(--primary); }
+    .upload-preview { margin-top: 1.5rem; position: relative; z-index: 15; }
+    .upload-preview img { max-height: 200px; border-radius: 12px; border: 1px solid var(--border-light); display: block; margin: 0 auto; }
+
+    .form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 3rem; }
+    .btn { padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 500; font-size: 0.9rem; cursor: pointer; text-decoration: none; border: 1px solid transparent; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { border-color: var(--border-light); color: var(--text-dark); background: var(--surface); }
+    .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 8px; }
+
+    /* Webcam Container */
+    #webcam-container { display: none; margin-bottom: 1.5rem; background: #f1f5f9; padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border-light); text-align: center; }
+    #webcam-video { width: 100%; max-width: 400px; border-radius: 12px; background: #000; display: block; margin: 0 auto 1rem; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <aside class="sidebar">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; padding: 0 1rem;">
+      <div style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem;">L</div>
+      <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-dark);">Lost & Found</div>
+    </div>
+    
+    <nav style="display: flex; flex-direction: column; gap: 5px;">
+      <a href="/admin/dashboard" class="nav-item {% if request.url.path == '/admin/dashboard' %}active{% endif %}">Dashboard</a>
+      <a href="/admin/items/new" class="nav-item {% if '/admin/items' in request.url.path %}active{% endif %}">Tambah Barang</a>
+      <a href="/admin/claims" class="nav-item {% if '/admin/claims' in request.url.path %}active{% endif %}">Daftar Klaim</a>
+      <a href="/admin/reviews" class="nav-item {% if '/admin/reviews' in request.url.path %}active{% endif %}">Review Publik</a>
+      <a href="/admin/history" class="nav-item {% if '/admin/history' in request.url.path %}active{% endif %}">Lihat Riwayat</a>
+
+    </nav>
+    
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 5px;">
+      <a href="/" class="nav-item" target="_blank">Lihat Publik</a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-right">
+        <div class="user-profile">
+          <div class="user-avatar">{{ admin.username[0].upper() }}</div>
+          <span style="font-size: 0.85rem; font-weight: 500;">{{ admin.username }}</span>
+        </div>
+        <a href="/admin/logout" style="text-decoration: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 500;">Log out</a>
+      </div>
+    </div>
+
+    <div class="content-body">
+      <div class="page-header">
+        <h1 class="page-title">{{ 'Edit Barang' if item else 'Tambah Barang Baru' }}</h1>
+        <p class="page-sub">{{ 'Perbarui informasi untuk barang ini.' if item else 'Isi formulir untuk mendaftarkan barang hilang atau temuan.' }}</p>
+      </div>
+
+      <div class="form-card">
+        <form method="POST" action="{{ '/admin/items/' + item.id|string + '/edit' if item else '/admin/items/new' }}" enctype="multipart/form-data">
+
+          <div class="form-section-title">Informasi Dasar</div>
+          <div class="form-grid">
+            <div class="form-group form-full">
+              <label class="form-label" for="title">Nama Barang *</label>
+              <input class="form-control" type="text" id="title" name="title" placeholder="Contoh: Dompet Kulit Hitam" value="{{ item.title if item else '' }}" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="location">Lokasi</label>
+              <input class="form-control" type="text" id="location" name="location" placeholder="Kantin, Ruang Kelas..." value="{{ item.location if item else '' }}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reporter_name">Dilaporkan Oleh</label>
+              <input class="form-control" type="text" id="reporter_name" name="reporter_name" placeholder="Nama pelapor" value="{{ item.reporter_name if item else '' }}" />
+            </div>
+            <div class="form-group form-full">
+              <label class="form-label" for="description">Deskripsi</label>
+              <textarea class="form-control" id="description" name="description" placeholder="Ciri-ciri detail...">{{ item.description if item else '' }}</textarea>
+            </div>
+          </div>
+
+          <div class="form-section-title" style="margin-top: 1rem;">Status Barang</div>
+          <div class="form-group" style="margin-bottom: 2.5rem;">
+            <div class="status-group">
+              <input class="status-radio" type="radio" id="s-found" name="status" value="FOUND" {% if (item and item.status=='FOUND') or not item %}checked{% endif %} />
+              <label class="status-option" for="s-found">Ditemukan</label>
+
+              <input class="status-radio" type="radio" id="s-lost" name="status" value="LOST" {% if item and item.status=='LOST' %}checked{% endif %} />
+              <label class="status-option" for="s-lost">Hilang</label>
+
+              <input class="status-radio" type="radio" id="s-claimed" name="status" value="CLAIMED" {% if item and item.status=='CLAIMED' %}checked{% endif %} />
+              <label class="status-option" for="s-claimed">Diklaim</label>
+            </div>
+          </div>
+
+          <div class="form-section-title">
+            <span>Foto Barang *</span>
+            <button type="button" id="btn-open-cam" class="btn btn-outline btn-sm">📷 Gunakan Webcam</button>
+          </div>
+
+          <div id="webcam-container">
+            <video id="webcam-video" autoplay playsinline></video>
+            <canvas id="webcam-canvas" style="display:none;"></canvas>
+            <div>
+              <button type="button" id="btn-capture" class="btn btn-primary btn-sm">📸 Jepret Foto</button>
+              <button type="button" id="btn-close-cam" class="btn btn-outline btn-sm">Batal</button>
+            </div>
+          </div>
+
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" name="image" id="imageInput" accept="image/*" {% if not item or not item.image_url %}required{% endif %} />
+            <div class="upload-icon">📸</div>
+            <div class="upload-label">Klik atau Tarik Foto Kesini</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">Maks 10 MB (JPG, PNG)</div>
+            
+            <div class="upload-preview" id="previewWrap" style="{% if not (item and item.image_url) %}display:none;{% endif %}">
+              <img id="previewImg" src="{{ item.image_url if item and item.image_url else '' }}" alt="Preview" />
+              {% if item and item.image_url %}
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">Ini adalah gambar yang tersimpan saat ini. Upload gambar baru jika ingin menggantinya.</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <a href="/admin/dashboard" class="btn btn-outline">Batal</a>
+            <button type="submit" class="btn btn-primary">{{ 'Simpan Perubahan' if item else 'Tambahkan Barang' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Logika File Upload Standard
+  const input = document.getElementById('imageInput');
+  const previewImg = document.getElementById('previewImg');
+  const previewWrap = document.getElementById('previewWrap');
+  const zone = document.getElementById('uploadZone');
+
+  input.addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => { previewImg.src = e.target.result; previewWrap.style.display = 'block'; };
+      reader.readAsDataURL(this.files[0]);
+    }
+  });
+
+  // Efek Drag & Drop
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('over');
+    if (e.dataTransfer.files.length) { 
+      input.files = e.dataTransfer.files; 
+      input.dispatchEvent(new Event('change')); 
+    }
+  });
+
+  // Logika Webcam
+  const video = document.getElementById('webcam-video');
+  const canvas = document.getElementById('webcam-canvas');
+  let stream = null;
+
+  document.getElementById('btn-open-cam').addEventListener('click', async () => {
+    document.getElementById('webcam-container').style.display = 'block';
+    try {
+      // Meminta izin akses webcam ke browser
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      video.srcObject = stream;
+    } catch (err) {
+      alert("Gagal mengakses webcam. Pastikan Anda mengizinkan akses kamera di browser.");
+      document.getElementById('webcam-container').style.display = 'none';
+    }
+  });
+
+  document.getElementById('btn-close-cam').addEventListener('click', () => {
+    if (stream) { stream.getTracks().forEach(track => track.stop()); }
+    document.getElementById('webcam-container').style.display = 'none';
+  });
+
+  document.getElementById('btn-capture').addEventListener('click', () => {
+    // Sesuaikan ukuran canvas dengan resolusi video asli
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Konversi Canvas ke File dan masukkan ke input
+    canvas.toBlob((blob) => {
+      const file = new File([blob], "webcam_capture_" + Date.now() + ".jpg", { type: "image/jpeg" });
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      
+      // Trigger event agar preview gambar ter-update
+      input.dispatchEvent(new Event('change'));
+      
+      // Matikan webcam setelah jepret
+      document.getElementById('btn-close-cam').click();
+    }, 'image/jpeg', 0.9); // Kualitas 90%
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Dashboard — Admin{% endblock %}
+
+{% block custom_style %}
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+  .stat-card { background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border-light); display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+  .stat-icon { width: 54px; height: 54px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
+  .stat-info { display: flex; flex-direction: column; }
+  .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--text-dark); line-height: 1.2; }
+  .stat-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+  
+  .filter-container { display: flex; gap: 10px; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 0.5rem; }
+  .filter-pill { padding: 0.6rem 1.2rem; border-radius: 20px; background: white; border: 1px solid var(--border-light); font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+  .filter-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .filter-pill:hover:not(.active) { background: var(--border-light); }
+  
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+  .card { 
+    background: white; border: 1px solid var(--border-light); 
+    border-radius: 16px; padding: 0; /* Diubah jadi 0 agar gambar mepet ke atas */
+    display: flex; flex-direction: column; 
+    text-decoration: none; color: inherit;
+    overflow: hidden; /* Wajib ada */
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease; 
+  }
+  .card.item-card:hover { 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
+    transform: translateY(-3px); 
+    border-color: #cbd5e1; 
+  }
+  .card-img {
+    height: 160px; background: #f8fafc; display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .card-img img { width: 100%; height: 100%; object-fit: cover; }
+  .img-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #94a3b8; }
+  .card-body-admin { padding: 1.2rem; display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; width: fit-content; margin-bottom: 5px; }
+  .badge-found { background: #dcfce7; color: #16a34a; }
+  .badge-lost { background: #ffe4e6; color: #e11d48; }
+  .badge-claimed { background: #f1f5f9; color: #64748b; }{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">Ringkasan Sistem</h1>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-icon" style="background: #e0f2fe; color: #0284c7;"><i class="ph-fill ph-package"></i></div>
+      <div class="stat-info"><span class="stat-value">{{ total_items }}</span><span class="stat-label">Total Barang</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: #fef08a; color: #a16207;"><i class="ph-fill ph-clock-counter-clockwise"></i></div>
+      <div class="stat-info"><span class="stat-value">{{ pending_claims }}</span><span class="stat-label">Menunggu Klaim</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: #fed7aa; color: #c2410c;"><i class="ph-fill ph-shield-warning"></i></div>
+      <div class="stat-info"><span class="stat-value">{{ pending_reviews }}</span><span class="stat-label">Review Publik</span></div>
+    </div>
+  </div>
+
+  <div class="filter-container">
+    <div class="filter-pill active" onclick="filterItems('ALL')">Semua ({{ counts.ALL }})</div>
+    <div class="filter-pill" onclick="filterItems('LOST')">Kehilangan ({{ counts.LOST }})</div>
+    <div class="filter-pill" onclick="filterItems('FOUND')">Ditemukan ({{ counts.FOUND }})</div>
+    <div class="filter-pill" onclick="filterItems('CLAIMED')">Diklaim ({{ counts.CLAIMED }})</div>
+  </div>
+
+  <div class="grid" id="itemsGrid">
+    {% for item in items %}
+    <a href="/admin/item/{{ item.id }}" class="card item-card" data-status="{{ item.status }}">
+      
+      <div class="card-img">
+        {% if item.image_url %}
+          <img src="{{ item.image_url }}" alt="{{ item.title }}" loading="lazy" />
+        {% else %}
+          <div class="img-placeholder">
+            <i class="ph ph-image" style="font-size: 2.5rem;"></i>
+            <span style="font-size: 0.7rem; font-weight: 500; letter-spacing: 0.5px;">NO IMAGE</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card-body-admin">
+        <div class="badge badge-{{ item.status.lower() }}">{{ item.status }}</div>
+        <h3 style="font-size: 1.1rem; color: var(--text-dark); font-weight: 600;">{{ item.title }}</h3>
+        <div style="font-size: 0.8rem; color: var(--text-muted); font-family: monospace;">Kode: {{ item.code }}</div>
+        
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">
+          <i class="ph ph-map-pin"></i> {{ item.location }}
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted);">
+          <i class="ph ph-calendar-blank"></i> {{ item.created_at.strftime('%d %b %Y') if item.created_at else '-' }}
+        </div>
+      </div>
+
+    </a>
+    {% endfor %}
+  </div>
+  {% endblock %}
+
+{% block custom_script %}
+<script>
+  function filterItems(status) {
+    document.querySelectorAll('.filter-pill').forEach(el => el.classList.remove('active'));
+    event.target.classList.add('active');
+    document.querySelectorAll('.item-card').forEach(card => {
+      card.style.display = (status === 'ALL' || card.getAttribute('data-status') === status) ? 'flex' : 'none';
+    });
+  }
+</script>
+{% endblock %}

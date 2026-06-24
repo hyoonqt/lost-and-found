@@ -1,0 +1,89 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Detail Barang — Admin{% endblock %}
+
+{% block custom_style %}
+  .btn-back {
+    display: inline-flex; align-items: center; gap: 8px;
+    text-decoration: none; color: var(--text-muted);
+    font-weight: 600; font-size: 0.95rem;
+    padding: 0.5rem 0.8rem; border-radius: 8px;
+    margin-left: -0.8rem; 
+    transition: all 0.2s ease;
+    background: transparent;
+  }
+  .btn-back:hover {
+    color: var(--primary);
+    background: var(--border-light);
+    transform: translateX(-4px); 
+  }
+  .detail-card { background: white; border: 1px solid var(--border-light); border-radius: 16px; padding: 2rem; display: grid; grid-template-columns: 300px 1fr; gap: 2rem; }
+  .img-box { background: #f8fafc; border-radius: 12px; height: 300px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border-light); }
+  .img-box img { width: 100%; height: 100%; object-fit: cover; }
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-light); margin-top: 1rem; }
+  .meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .meta-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+  .meta-value { font-size: 0.95rem; color: var(--text-dark); font-weight: 500; }
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+  .badge-found { background: #dcfce7; color: #16a34a; }
+  .badge-lost { background: #ffe4e6; color: #e11d48; }
+  .badge-claimed { background: #f1f5f9; color: #64748b; }
+  
+  @media (max-width: 768px) {
+    .detail-card { grid-template-columns: 1fr; }
+    .img-box { height: 250px; }
+  }
+{% endblock %}
+
+{% block content %}
+ <div style="margin-bottom: 1.5rem;">
+    <a href="javascript:history.back()" class="btn-back">
+      <i class="ph ph-arrow-left"></i> Kembali
+    </a>
+  </div>
+
+  <div class="detail-card">
+    <div class="img-box">
+      {% if item.image_url %}
+        <img src="{{ item.image_url }}" alt="Foto Barang">
+      {% else %}
+        <div style="text-align: center; color: #94a3b8;">
+          <i class="ph ph-image" style="font-size: 4rem;"></i>
+          <div style="font-size: 0.8rem; font-weight: 600; margin-top: 10px;">NO IMAGE</div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div>
+      <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 1rem;">
+        <span class="badge badge-{{ item.status.lower() }}">{{ item.status }}</span>
+        {% if not item.is_approved %}<span class="badge" style="background: #fef08a; color: #a16207;">Menunggu Review</span>{% endif %}
+      </div>
+      
+      <h1 style="font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.5rem;">{{ item.title }}</h1>
+      <div style="font-family: monospace; color: var(--primary); font-weight: 600; font-size: 1rem; margin-bottom: 1.5rem;">#{{ item.code }}</div>
+
+      <div class="meta-grid">
+        <div class="meta-item"><span class="meta-label">Lokasi</span><span class="meta-value">{{ item.location }}</span></div>
+        <div class="meta-item"><span class="meta-label">Dilaporkan Pada</span><span class="meta-value">{{ item.created_at.strftime('%d %b %Y') if item.created_at else '-' }}</span></div>
+        <div class="meta-item"><span class="meta-label">Pelapor / Penyerah</span><span class="meta-value">{{ item.reporter_name }}</span></div>
+        <div class="meta-item"><span class="meta-label">Kontak WA</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="meta-value">{{ item.reporter_contact }}</span>
+            {% if item.reporter_contact and item.reporter_contact != '-' %}
+              {% set wa_num = item.reporter_contact | replace('08', '628', 1) %}
+              <a href="https://wa.me/{{ wa_num }}?text=Halo%20{{ item.reporter_name }},%20ini%20admin%20Lost%20and%20Found%20sekolah.%20Terkait%20barang%20{{ item.title }}..." target="_blank" style="color: #25D366; font-size: 1.2rem;" title="Hubungi WA"><i class="ph-fill ph-whatsapp-logo"></i></a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.5rem;">
+        <div class="meta-label" style="margin-bottom: 5px;">Deskripsi / Ciri Khusus</div>
+        <p style="font-size: 0.95rem; line-height: 1.6; color: var(--text-dark); background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid var(--border-light);">
+          {{ item.description if item.description else 'Tidak ada deskripsi khusus.' }}
+        </p>
+      </div>
+    </div>
+  </div>
+{% endblock %}

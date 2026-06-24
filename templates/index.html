@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Barang Hilang & Temuan{% endblock %}
+
+{% block head %}
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<style>
+  .hero { padding: 4rem 0; text-align: center; }
+  .hero h1 { font-size: 3rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-dark); }
+  .hero p { font-size: 1.1rem; color: var(--text-muted); max-width: 600px; margin: 0 auto 2rem; }
+
+  /* ── Filter & Search Toolbar ── */
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;
+  }
+  .filter-pills { display: flex; gap: 10px; }
+  .filter-pill {
+    padding: 0.5rem 1.2rem; border-radius: 20px; font-size: 0.9rem; font-weight: 500;
+    cursor: pointer; color: var(--text-muted); background: var(--surface);
+    border: 1px solid var(--border-light); transition: all 0.2s; user-select: none;
+  }
+  .filter-pill:hover { border-color: var(--primary); color: var(--primary); }
+  .filter-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  .search-wrap {
+    background: var(--surface); border: 1px solid var(--border-light);
+    border-radius: 20px; padding: 0.6rem 1rem; display: flex; align-items: center; gap: 10px;
+    width: 300px; transition: border-color 0.2s;
+  }
+  .search-wrap:focus-within { border-color: var(--primary); }
+  .search-wrap input {
+    border: none; background: transparent; outline: none;
+    width: 100%; font-family: inherit; font-size: 0.9rem;
+  }
+
+  /* ── Grid ── */
+  .items-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem;
+  }
+  .item-card {
+    background: var(--surface); border: 1px solid var(--border-light);
+    border-radius: 16px; overflow: hidden; text-decoration: none; color: inherit;
+    transition: box-shadow 0.2s, transform 0.2s; display: block;
+  }
+  .item-card:hover { box-shadow: 0 10px 30px rgba(0,0,0,0.05); transform: translateY(-3px); border-color: #cbd5e1; }
+  
+  .card-img {
+    height: 180px; background: #f8fafc; display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .card-img img { width: 100%; height: 100%; object-fit: cover; }
+  
+  /* Placeholder Pengganti Kardus Emoji */
+  .img-placeholder {
+    display: flex; flex-direction: column; align-items: center; gap: 8px; color: #94a3b8;
+  }
+  
+  .card-body { padding: 1.2rem; }
+  .card-title { font-weight: 600; font-size: 1.05rem; margin-bottom: 0.5rem; color: var(--text-dark); }
+  .card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted); }
+  
+  .status-badge {
+    padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+  }
+  .status-LOST { background: #fff1f2; color: #e11d48; }
+  .status-FOUND { background: #f0fdf4; color: #16a34a; }
+  .status-CLAIMED { background: #f1f5f9; color: #64748b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main">
+  <div class="hero">
+    <h1>Inventory Tracking</h1>
+    <p>Sistem pencatatan barang hilang dan temuan. Temukan barang Anda atau bantu kembalikan milik orang lain.</p>
+    <div style="margin-top: 1.5rem;">
+      <a href="/report" style="display: inline-flex; align-items: center; gap: 8px; background: var(--primary); color: white; padding: 0.8rem 1.8rem; border-radius: 20px; text-decoration: none; font-weight: 600; font-size: 0.95rem; box-shadow: 0 4px 15px rgba(0, 102, 255, 0.2); transition: all 0.2s;">
+        <i class="ph ph-plus-circle" style="font-size: 1.2rem;"></i> Buat Laporan Baru
+      </a>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-pills">
+      <div class="filter-pill active" data-filter="ALL" onclick="applyFilters('ALL')">Semua</div>
+      <div class="filter-pill" data-filter="FOUND" onclick="applyFilters('FOUND')">Ditemukan</div>
+      <div class="filter-pill" data-filter="LOST" onclick="applyFilters('LOST')">Hilang</div>
+    </div>
+
+    <div class="search-wrap">
+      <i class="ph ph-magnifying-glass" style="color: var(--text-muted); font-size: 1.2rem;"></i>
+      <input type="text" id="searchInput" placeholder="Cari nama, kode, atau lokasi..." onkeyup="applyFilters()" autocomplete="off" />
+    </div>
+  </div>
+
+  <div class="items-grid" id="itemsGrid">
+    {% for item in items %}
+    <a href="/item/{{ item.code }}" class="item-card" data-status="{{ item.status }}" data-text="{{ item.title | lower }} {{ item.code | lower }} {{ item.location | lower }}">
+      <div class="card-img">
+        {% if item.image_url %}
+          <img src="{{ item.image_url }}" alt="{{ item.title }}" loading="lazy" />
+        {% else %}
+          <div class="img-placeholder">
+            <i class="ph ph-image" style="font-size: 3rem;"></i>
+            <span style="font-size: 0.75rem; font-weight: 500; letter-spacing: 0.5px;">NO IMAGE</span>
+          </div>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <div class="card-title">{{ item.title }}</div>
+        <div class="card-meta">
+          <span style="font-family: monospace; background: var(--border-light); padding: 2px 6px; border-radius: 4px; color: var(--text-dark);">#{{ item.code }}</span>
+          <span class="status-badge status-{{ item.status }}">
+            {% if item.status == 'LOST' %}Hilang
+            {% elif item.status == 'FOUND' %}Temuan
+            {% else %}Diklaim{% endif %}
+          </span>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <div id="emptyState" style="display: {% if not items %}block{% else %}none{% endif %}; text-align: center; padding: 4rem; color: var(--text-muted); background: var(--surface); border-radius: 16px; border: 1px solid var(--border-light); grid-column: 1 / -1;">
+    <i class="ph ph-archive" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i><br>
+    <span id="emptyText">Tidak ada barang yang ditemukan.</span>
+  </div>
+
+</div>
+
+<script>
+  let currentFilter = 'ALL';
+
+  function applyFilters(statusTarget) {
+    // Update state & UI Filter Pills
+    if (statusTarget) {
+      currentFilter = statusTarget;
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      document.querySelector(`.filter-pill[data-filter="${statusTarget}"]`).classList.add('active');
+    }
+    
+    // Ambil input pencarian
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.querySelectorAll('.item-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+      const cardStatus = card.getAttribute('data-status');
+      const cardText = card.getAttribute('data-text');
+      
+      // Cek apakah kartu cocok dengan filter status & pencarian
+      const matchesStatus = (currentFilter === 'ALL' || cardStatus === currentFilter);
+      const matchesSearch = cardText.includes(query);
+
+      if (matchesStatus && matchesSearch) {
+        card.style.display = 'block';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    // Tampilkan pesan kosong jika tidak ada yang cocok
+    const emptyState = document.getElementById('emptyState');
+    if (visibleCount === 0) {
+      emptyState.style.display = 'block';
+      document.getElementById('emptyText').innerText = query 
+        ? `Pencarian "${query}" tidak ditemukan.` 
+        : 'Tidak ada barang dalam kategori ini.';
+    } else {
+      emptyState.style.display = 'none';
+    }
+  }
+</script>
+{% endblock %}

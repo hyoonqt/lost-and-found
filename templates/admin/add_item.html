@@ -1,0 +1,128 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Tambah Barang — Admin{% endblock %}
+
+{% block custom_style %}
+  .form-card { background: white; border: 1px solid var(--border-light); border-radius: 16px; padding: 2rem; max-width: 800px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .form-full { grid-column: 1 / -1; }
+  .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+  .form-label { font-size: 0.85rem; font-weight: 600; color: var(--text-dark); }
+  .form-control { width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-family: inherit; background: #f8fafc; outline: none; transition: border-color 0.2s; }
+  .form-control:focus { border-color: var(--primary); background: white; }
+  .status-group { display: flex; gap: 10px; }
+  .status-radio { display: none; }
+  .status-option { flex: 1; text-align: center; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; color: var(--text-muted); background: #ffffff; transition: all 0.2s;}
+  .status-radio:checked + .status-option { background: var(--primary); color: #ffffff; border-color: var(--primary); }
+  .btn-submit { padding: 0.8rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 1.5rem; width: 100%; transition: opacity 0.2s;}
+  .btn-submit:hover { opacity: 0.9; }
+  .btn-cam { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  #webcam-container { display: none; margin-top: 0.5rem; background: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; }
+  #webcam-video { width: 100%; max-width: 400px; border-radius: 8px; background: #000; margin: 0 auto 1rem; display: block; }
+{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">Tambah Barang Baru</h1>
+  <p class="page-sub">Masukkan data barang ke dalam sistem inventaris secara manual.</p>
+
+  <div class="form-card">
+    <form method="POST" action="/admin/items/new" enctype="multipart/form-data">
+      <div class="form-grid">
+        <div class="form-group form-full">
+          <label class="form-label">Status Barang *</label>
+          <div class="status-group">
+            <input class="status-radio" type="radio" id="s-found" name="status" value="FOUND" checked>
+            <label class="status-option" for="s-found">Ditemukan (FOUND)</label>
+            <input class="status-radio" type="radio" id="s-lost" name="status" value="LOST">
+            <label class="status-option" for="s-lost">Kehilangan (LOST)</label>
+          </div>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Nama Barang *</label>
+          <input class="form-control" type="text" name="title" placeholder="Contoh: Kunci Motor Honda" required>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Lokasi Temuan/Kehilangan *</label>
+          <input class="form-control" type="text" name="location" placeholder="Lab RPL, Masjid, Kantin..." required>
+        </div>
+        <div class="form-group form-full">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label class="form-label">Foto Barang</label>
+            <button type="button" id="btn-open-cam" class="btn-cam"><i class="ph ph-camera"></i> Gunakan Kamera</button>
+          </div>
+          <input class="form-control" type="file" name="image" id="imageInput" accept="image/*" style="padding: 0.5rem;">
+          <img id="previewImg" style="display: none; max-height: 120px; margin-top: 10px; border-radius: 8px; object-fit: cover;" />
+          <div id="webcam-container">
+            <video id="webcam-video" autoplay playsinline></video>
+            <canvas id="webcam-canvas" style="display:none;"></canvas>
+            <div style="display: flex; justify-content: center; gap: 10px;">
+              <button type="button" id="btn-capture" style="padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="ph ph-aperture"></i> Ambil Foto</button>
+              <button type="button" id="btn-close-cam" style="padding: 0.5rem 1rem; background: #e2e8f0; border: none; border-radius: 6px; cursor: pointer;">Batal</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Deskripsi / Ciri Khusus</label>
+          <textarea class="form-control" name="description" rows="3" placeholder="Warna, merk, atau ciri khas lainnya..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Diserahkan Oleh / Pelapor</label>
+          <input class="form-control" type="text" name="reporter_name" value="Admin" placeholder="Nama siswa / Admin" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">No. WhatsApp Pelapor</label>
+          <input class="form-control" type="text" name="reporter_contact" placeholder="Kosongkan jika admin" >
+        </div>
+      </div>
+      <button type="submit" class="btn-submit">Simpan ke Inventaris</button>
+    </form>
+  </div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('error')) {
+    showToast("Gagal menambahkan barang. Cek kembali form Anda.", "error");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  const input = document.getElementById('imageInput');
+  const previewImg = document.getElementById('previewImg');
+  const video = document.getElementById('webcam-video');
+  const canvas = document.getElementById('webcam-canvas');
+  let stream = null;
+
+  input.addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => { previewImg.src = e.target.result; previewImg.style.display = 'block'; };
+      reader.readAsDataURL(this.files[0]);
+    }
+  });
+
+  document.getElementById('btn-open-cam').addEventListener('click', async () => {
+    document.getElementById('webcam-container').style.display = 'block';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      video.srcObject = stream;
+    } catch (err) { alert("Kamera tidak diizinkan atau tidak ditemukan."); }
+  });
+
+  document.getElementById('btn-close-cam').addEventListener('click', () => {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    document.getElementById('webcam-container').style.display = 'none';
+  });
+
+  document.getElementById('btn-capture').addEventListener('click', () => {
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      const file = new File([blob], "capture_" + Date.now() + ".jpg", { type: "image/jpeg" });
+      const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+      input.dispatchEvent(new Event('change'));
+      document.getElementById('btn-close-cam').click();
+    }, 'image/jpeg', 0.9);
+  });
+</script>
+{% endblock %}

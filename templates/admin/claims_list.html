@@ -1,0 +1,139 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Daftar Klaim — Admin{% endblock %}
+
+{% block custom_style %}
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+  .card { background: white; border: 1px solid var(--border-light); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem; }
+  .card-title { font-size: 1.1rem; font-weight: 700; color: var(--text-dark); border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+  .detail-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; }
+  .detail-value { font-size: 0.95rem; font-weight: 500; color: var(--text-dark); }
+  .proof-box { background: var(--border-light); padding: 1rem; border-radius: 8px; font-size: 0.85rem; font-style: italic; margin-top: 5px; }
+  .actions { display: flex; gap: 10px; margin-top: auto; padding-top: 1rem; }
+  .btn { 
+    flex: 1; padding: 0.6rem 1.2rem; border: none; border-radius: 10px; 
+    font-size: 0.85rem; font-weight: 600; cursor: pointer; 
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; 
+    transition: all 0.2s ease; background: white; 
+  }
+  
+  /* Ghost Button - Verify / Approve (Biru Tema Global) */
+  .btn-verify { 
+    color: var(--primary); 
+    border: 1.5px solid #bfdbfe; /* Border biru muda soft */
+  }
+  .btn-verify:hover { 
+    border-color: var(--primary); 
+    background: #eff6ff; /* Background biru sangat muda saat di-hover */
+  }
+
+  /* Ghost Button - Reject (Merah) */
+  .btn-reject { 
+    color: #e11d48; 
+    border: 1.5px solid #fecdd3; /* Border merah muda soft */
+  }
+  .btn-reject:hover { 
+    border-color: #e11d48; 
+    background: #fff1f2; /* Background merah sangat muda saat di-hover */
+  }
+  .btn-wa { background: #f0fdf4; color: #16a34a; border: 1.5px solid #dcfce7; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; text-decoration: none; margin-top: 10px; transition: all 0.2s; }
+  .btn-wa:hover { background: #16a34a; color: white; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; }
+  .modal-card { background: var(--surface); padding: 2.5rem; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.1); position: relative; }
+  .rfid-icon { font-size: 4rem; margin-bottom: 1rem; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.95); } }
+  .scanner-ready-text { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-top: 1rem; animation: pulse 1.5s infinite; }
+  .rfid-input { opacity: 0; position: absolute; z-index: -1; top: 0; left: 0; width: 1px; height: 1px; }
+{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">Validasi Klaim Barang</h1>
+  <p class="page-sub">Verifikasi bukti kepemilikan dan tap kartu RFID pelajar saat penyerahan barang.</p>
+  
+  <div class="grid" id="claimsGrid">
+    {% if claims_data %}
+      {% for claim, item in claims_data %}
+      <div class="card">
+        <div class="card-title">Klaim #{{ claim.id }} - {{ item.title }}</div>
+        <div class="detail-label">Pengklaim</div>
+        <div class="detail-value">{{ claim.claimer_name }} ({{ claim.claimer_class }})</div>
+        <div class="detail-label" style="margin-top: 10px;">Kontak WA</div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="detail-value">{{ claim.contact_number }}</div>
+        {% set wa_claim = claim.contact_number | replace('08', '628', 1) %}
+        <a href="https://wa.me/{{ wa_claim }}?text=Halo%20{{ claim.claimer_name }},%20ini%20admin%20TU.%20Terkait%20klaim%20barang%20{{ item.title }}%20kamu..." target="_blank" class="btn-wa" style="margin-top: 0; padding: 0.2rem 0.6rem;">
+          <i class="ph-fill ph-whatsapp-logo"></i> Chat
+        </a>
+      </div>
+        <div class="detail-label" style="margin-top: 10px;">Bukti / Ciri Khusus</div>
+        <div class="proof-box">"{{ claim.proof_description }}"</div>
+
+        {% if claim.proof_image_url %}
+        <div style="margin-top: 10px;">
+          <a href="{{ claim.proof_image_url }}" target="_blank" style="font-size: 0.85rem; color: var(--primary); text-decoration: none; font-weight: 600;">
+            <i class="ph ph-image"></i> Lihat Foto Bukti
+          </a>
+        </div>
+        {% endif %}
+
+        <div class="actions">
+          <button onclick="openRFIDModal({{ claim.id }})" class="btn btn-verify" style="display:flex; align-items:center; justify-content:center; gap:5px;"><i class="ph ph-identification-card"></i> Validasi RFID</button>
+          <form action="/admin/claims/{{ claim.id }}/process" method="POST" style="flex: 1; display:flex;">
+            <input type="hidden" name="action" value="reject">
+            <button type="submit" class="btn btn-reject" style="width:100%; display:flex; align-items:center; justify-content:center; gap:5px;"><i class="ph ph-x"></i> Tolak</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--text-muted); background:var(--surface); border:1px solid var(--border-light); border-radius:16px;">
+        <i class="ph ph-folder-open" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i><br>
+        Belum ada antrean klaim yang perlu diproses.
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="modal-overlay" id="rfidModal">
+    <div class="modal-card">
+      <div class="rfid-icon" style="color: var(--primary);"><i class="ph ph-identification-card"></i></div>
+      <h2>Tap Kartu Pelajar</h2>
+      <p style="font-size: 0.9rem; color: var(--text-muted);">Sistem sedang mendengarkan alat scanner...</p>
+      <div class="scanner-ready-text">Menunggu Scan...</div>
+      <form id="rfidForm" method="POST" action="">
+        <input type="hidden" name="action" value="approve">
+        <input type="text" name="rfid_uid" id="rfidInput" class="rfid-input" required autocomplete="off">
+      </form>
+      <button type="button" onclick="closeRFIDModal()" style="margin-top: 1.5rem; background: none; border: none; color: var(--text-muted); text-decoration: underline; cursor: pointer;">Batalkan</button>
+    </div>
+  </div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+  const modal = document.getElementById('rfidModal');
+  const form = document.getElementById('rfidForm');
+  const input = document.getElementById('rfidInput');
+
+  function openRFIDModal(claimId) {
+    form.action = `/admin/claims/${claimId}/process`;
+    modal.style.display = 'flex';
+    input.value = ''; 
+    setTimeout(() => input.focus(), 100);
+  }
+  function closeRFIDModal() { modal.style.display = 'none'; input.blur(); }
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeRFIDModal(); else input.focus(); });
+  input.addEventListener('blur', () => { if (modal.style.display === 'flex') setTimeout(() => input.focus(), 10); });
+
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('success')) {
+    const msgMap = { 'claim_processed': 'Klaim berhasil diproses via RFID!', 'reject_processed': 'Klaim berhasil ditolak.' };
+    showToast(msgMap[urlParams.get('success')] || "Aksi sukses!", "success");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+  if (urlParams.has('error')) {
+    const msgMap = { 'rfid_empty': 'Gagal! Kartu RFID wajib di-tap.', 'rfid_not_found': 'Akses Ditolak! Kartu pelajar tidak terdaftar.' };
+    showToast(msgMap[urlParams.get('error')] || "Error!", "error");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+</script>
+{% endblock %}
