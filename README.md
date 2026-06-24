@@ -4,6 +4,8 @@ Sistem barang hilang & temuan berbasis web untuk lingkungan sekolah.
 
 ---
 
+# Some things might broke because i did some changes and too lazy to edit the readme :)
+
 ## Requirements
 
 - [Docker](https://docs.docker.com/get-docker/)
